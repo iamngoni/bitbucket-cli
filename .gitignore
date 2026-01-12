@@ -1,0 +1,6 @@
+/target
+.env*
+AGENT.md
+emails/payment_success_test.html
+.DS_Store
+.idea/
