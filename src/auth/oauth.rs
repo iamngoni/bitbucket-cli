@@ -76,7 +76,7 @@ use url::Url;
 
 /// The default OAuth client ID for the Bitbucket CLI.
 /// Users can override this with their own OAuth consumer.
-pub const DEFAULT_CLIENT_ID: &str = "bb-cli";
+pub const DEFAULT_CLIENT_ID: &str = "Pyydmsf5kLpEqs24kw";
 
 /// Bitbucket Cloud OAuth authorization endpoint.
 const AUTHORIZE_URL: &str = "https://bitbucket.org/site/oauth2/authorize";
