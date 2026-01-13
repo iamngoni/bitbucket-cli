@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  bitbucket-cli
+  packaging/chocolatey/bb.nuspec
+
+  Created by Ngonidzashe Mangudya on 2026/01/12.
+  Copyright (c) 2025 IAMNGONI. All rights reserved.
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>bb</id>
+    <version>0.1.0</version>
+    <title>bb - Bitbucket CLI</title>
+    <authors>Ngonidzashe Mangudya</authors>
+    <owners>iamngoni</owners>
+    <projectUrl>https://github.com/iamngoni/bitbucket-cli</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/iamngoni/bitbucket-cli/master/assets/icon.png</iconUrl>
+    <licenseUrl>https://github.com/iamngoni/bitbucket-cli/blob/master/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/iamngoni/bitbucket-cli</projectSourceUrl>
+    <docsUrl>https://github.com/iamngoni/bitbucket-cli#readme</docsUrl>
+    <bugTrackerUrl>https://github.com/iamngoni/bitbucket-cli/issues</bugTrackerUrl>
+    <tags>bitbucket cli git vcs devtools developer-tools</tags>
+    <summary>Command-line interface for Bitbucket Cloud and Server/Data Center</summary>
+    <description><![CDATA[
+# bb - Bitbucket CLI
+
+A powerful command-line interface for Bitbucket that brings repository management,
+pull requests, pipelines, and team collaboration directly to the terminal.
+
+## Features
+
+- **Repository Management**: Clone, create, fork, and manage repositories
+- **Pull Requests**: Create, review, merge, and manage pull requests
+- **Pipelines**: Trigger, monitor, and view CI/CD pipeline logs (Cloud)
+- **Issues**: Create and manage issues with Jira integration
+- **Multi-Platform**: Supports both Bitbucket Cloud and Server/Data Center
+- **Interactive & Scriptable**: Rich terminal UI with JSON output for automation
+
+## Usage
+
+```
+bb auth login       # Authenticate with Bitbucket
+bb repo list        # List repositories
+bb pr create        # Create a pull request
+bb pipeline run     # Trigger a pipeline
+```
+
+## Documentation
+
+For full documentation, visit: https://github.com/iamngoni/bitbucket-cli
+    ]]></description>
+    <releaseNotes>https://github.com/iamngoni/bitbucket-cli/releases</releaseNotes>
+    <copyright>Copyright 2025 Ngonidzashe Mangudya</copyright>
+    <dependencies>
+      <!-- No dependencies -->
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
