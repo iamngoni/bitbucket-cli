@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Run doc tests
         run: cargo test --doc --all-features || echo "Doc tests had failures (non-blocking)"
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust 1.75.0 (MSRV)
-        uses: dtolnay/rust-action@1.75.0
+        uses: dtolnay/rust-toolchain@1.75.0
 
       - name: Check MSRV
         run: cargo check --all-features
