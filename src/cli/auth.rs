@@ -70,7 +70,7 @@ pub struct LoginArgs {
     pub server: bool,
 
     /// The hostname of the Bitbucket instance (for Server/DC)
-    #[arg(long, short = 'h')]
+    #[arg(long, short = 'H')]
     pub host: Option<String>,
 
     /// Read token from standard input
@@ -82,14 +82,14 @@ pub struct LoginArgs {
     pub scopes: Option<Vec<String>>,
 
     /// Open browser for authentication
-    #[arg(long, short = 'w')]
+    #[arg(long)]
     pub web: bool,
 }
 
 #[derive(Args, Debug)]
 pub struct LogoutArgs {
     /// The hostname to log out from
-    #[arg(long, short = 'h')]
+    #[arg(long, short = 'H')]
     pub host: Option<String>,
 
     /// Log out of all accounts
@@ -114,7 +114,7 @@ pub struct SwitchArgs {
 #[derive(Args, Debug)]
 pub struct TokenArgs {
     /// The hostname for which to print the token
-    #[arg(long, short = 'h')]
+    #[arg(long, short = 'H')]
     pub host: Option<String>,
 }
 
