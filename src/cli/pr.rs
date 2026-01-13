@@ -375,36 +375,43 @@ impl TableOutput for PrListItem {
     fn print_table(&self, color: bool) {
         let state_styled = if color {
             match self.state.as_str() {
-                "OPEN" => style(&self.state).green().to_string(),
-                "MERGED" => style(&self.state).magenta().to_string(),
-                "DECLINED" => style(&self.state).red().to_string(),
-                "SUPERSEDED" => style(&self.state).yellow().to_string(),
+                "OPEN" => style("OPEN").green().to_string(),
+                "MERGED" => style("MERGED").magenta().to_string(),
+                "DECLINED" => style("DECLINED").red().to_string(),
+                "SUPERSEDED" => style("SUPERSEDED").yellow().to_string(),
                 _ => self.state.clone(),
             }
         } else {
             self.state.clone()
         };
 
-        let title_truncated = if self.title.len() > 50 {
-            format!("{}...", &self.title[..47])
+        // Truncate title smartly
+        let title_truncated = truncate_string(&self.title, 45);
+
+        // Truncate author name
+        let author_truncated = truncate_string(&self.author, 18);
+
+        // Truncate branch names and format with arrow
+        let source = truncate_string(&self.source_branch, 20);
+        let dest = truncate_string(&self.destination_branch, 15);
+        let branches = format!("{} → {}", source, dest);
+
+        // Use bold for PR ID
+        let id_styled = if color {
+            style(format!("#{}", self.id)).cyan().to_string()
         } else {
-            self.title.clone()
+            format!("#{}", self.id)
         };
 
         println!(
-            "#{:<6} {:<10} {:<50} {:<15} {} -> {}",
-            self.id,
-            state_styled,
-            title_truncated,
-            self.author,
-            self.source_branch,
-            self.destination_branch
+            "{:<7} {:<10} {:<45}  {:<18}  {}",
+            id_styled, state_styled, title_truncated, author_truncated, branches
         );
     }
 
     fn print_markdown(&self) {
         println!(
-            "- **#{}** [{}] {} (by @{}) `{}` -> `{}`",
+            "- **#{}** [{}] {} (by @{}) `{}` → `{}`",
             self.id,
             self.state,
             self.title,
@@ -412,6 +419,16 @@ impl TableOutput for PrListItem {
             self.source_branch,
             self.destination_branch
         );
+    }
+}
+
+/// Truncate a string to max length, adding "…" if truncated
+fn truncate_string(s: &str, max_len: usize) -> String {
+    if s.chars().count() > max_len {
+        let truncated: String = s.chars().take(max_len - 1).collect();
+        format!("{}…", truncated)
+    } else {
+        s.to_string()
     }
 }
 
@@ -658,10 +675,14 @@ impl PrCommand {
                         context.owner, context.repo_slug
                     );
                     println!(
-                        "{:<8} {:<10} {:<50} {:<15} BRANCHES",
-                        "ID", "STATE", "TITLE", "AUTHOR"
+                        "{:<7} {:<10} {:<45}  {:<18}  {}",
+                        style("ID").bold(),
+                        style("STATE").bold(),
+                        style("TITLE").bold(),
+                        style("AUTHOR").bold(),
+                        style("BRANCHES").bold()
                     );
-                    println!("{}", "-".repeat(100));
+                    println!("{}", style("─".repeat(110)).dim());
                 }
                 output.write_list(&items)?;
             }
@@ -721,10 +742,14 @@ impl PrCommand {
                         context.owner, context.repo_slug
                     );
                     println!(
-                        "{:<8} {:<10} {:<50} {:<15} BRANCHES",
-                        "ID", "STATE", "TITLE", "AUTHOR"
+                        "{:<7} {:<10} {:<45}  {:<18}  {}",
+                        style("ID").bold(),
+                        style("STATE").bold(),
+                        style("TITLE").bold(),
+                        style("AUTHOR").bold(),
+                        style("BRANCHES").bold()
                     );
-                    println!("{}", "-".repeat(100));
+                    println!("{}", style("─".repeat(110)).dim());
                 }
                 output.write_list(&items)?;
             }
