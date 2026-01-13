@@ -134,6 +134,12 @@ jobs:
       - name: Install cargo-deb
         run: cargo install cargo-deb
 
+      - name: Prepare binary for packaging
+        run: |
+          mkdir -p target/release
+          cp artifacts/bb-linux-x86_64 target/release/bb
+          chmod +x target/release/bb
+
       - name: Build .deb package
         run: |
           cargo deb --no-build
