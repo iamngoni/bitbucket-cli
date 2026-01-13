@@ -152,6 +152,7 @@ pub fn validate_token(token: &str) -> bool {
 
 /// Response from Bitbucket Server user endpoint.
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct ServerUserResponse {
     /// Username of the authenticated user.
     name: String,

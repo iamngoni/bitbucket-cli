@@ -163,6 +163,7 @@ pub struct EnvironmentDeleteArgs {
 // API response types
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct Deployment {
     uuid: String,
     state: DeploymentState,
@@ -173,6 +174,7 @@ struct Deployment {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DeploymentState {
     name: String,
     #[serde(default)]
@@ -182,6 +184,7 @@ struct DeploymentState {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DeploymentEnvironment {
     uuid: String,
     name: String,
@@ -190,6 +193,7 @@ struct DeploymentEnvironment {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DeploymentRelease {
     #[serde(default)]
     name: Option<String>,
@@ -198,6 +202,7 @@ struct DeploymentRelease {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DeploymentCommit {
     hash: String,
     #[serde(default)]
@@ -205,12 +210,14 @@ struct DeploymentCommit {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DeploymentDeployable {
     #[serde(default)]
     pipeline: Option<DeploymentPipeline>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct DeploymentPipeline {
     uuid: String,
 }
@@ -357,7 +364,7 @@ impl DeployCommand {
             .filter(|d| {
                 args.status
                     .as_ref()
-                    .map_or(true, |s| d.state.name.to_lowercase() == s.to_lowercase())
+                    .is_none_or(|s| d.state.name.to_lowercase() == s.to_lowercase())
             })
             .map(|d| DeploymentListItem {
                 uuid: d.uuid,

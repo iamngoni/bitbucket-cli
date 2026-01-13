@@ -287,17 +287,15 @@ impl TableOutput for PipelineListItem {
             } else {
                 status_str
             }
+        } else if color && self.state.to_uppercase() == "IN_PROGRESS" {
+            style(&self.state).cyan().to_string()
         } else {
-            if color && self.state.to_uppercase() == "IN_PROGRESS" {
-                style(&self.state).cyan().to_string()
-            } else {
-                self.state.clone()
-            }
+            self.state.clone()
         };
 
         let duration = self
             .duration_seconds
-            .map(|d| format_duration(d))
+            .map(format_duration)
             .unwrap_or_else(|| "-".to_string());
 
         println!(
@@ -400,12 +398,10 @@ impl TableOutput for PipelineSchedule {
             } else {
                 "Yes".to_string()
             }
+        } else if color {
+            style("No").dim().to_string()
         } else {
-            if color {
-                style("No").dim().to_string()
-            } else {
-                "No".to_string()
-            }
+            "No".to_string()
         };
 
         let pipeline = self
@@ -702,8 +698,8 @@ impl PipelineCommand {
 
         if !global.json {
             println!(
-                "{:<7} {:20} {:20} {:15} {}",
-                "#", "STATUS", "BRANCH", "CREATED", "DURATION"
+                "{:<7} {:20} {:20} {:15} DURATION",
+                "#", "STATUS", "BRANCH", "CREATED"
             );
             println!("{}", "-".repeat(80));
         }
@@ -1569,7 +1565,7 @@ impl PipelineCommand {
                 let writer = OutputWriter::new(format);
 
                 if !global.json {
-                    println!("{:30} {:15} {}", "NAME", "SIZE", "CREATED");
+                    println!("{:30} {:15} CREATED", "NAME", "SIZE");
                     println!("{}", "-".repeat(60));
                 }
 
@@ -1702,8 +1698,8 @@ impl PipelineCommand {
 
                 if !global.json {
                     println!(
-                        "{:12} {:8} {:20} {:20} {}",
-                        "ID", "ENABLED", "CRON", "BRANCH", "PIPELINE"
+                        "{:12} {:8} {:20} {:20} PIPELINE",
+                        "ID", "ENABLED", "CRON", "BRANCH"
                     );
                     println!("{}", "-".repeat(80));
                 }
@@ -1890,7 +1886,7 @@ impl PipelineCommand {
                 let writer = OutputWriter::new(format);
 
                 if !global.json {
-                    println!("{:12} {:30} {:15} {}", "ID", "NAME", "STATUS", "LABELS");
+                    println!("{:12} {:30} {:15} LABELS", "ID", "NAME", "STATUS");
                     println!("{}", "-".repeat(80));
                 }
 
@@ -1964,10 +1960,8 @@ fn get_current_branch() -> Result<String> {
 }
 
 fn format_pipeline_id(id: &str) -> String {
-    // If it looks like a build number, return as-is
-    if id.chars().all(|c| c.is_ascii_digit()) {
-        id.to_string()
-    } else if id.starts_with('{') && id.ends_with('}') {
+    // If it looks like a build number or already wrapped in braces, return as-is
+    if id.chars().all(|c| c.is_ascii_digit()) || (id.starts_with('{') && id.ends_with('}')) {
         id.to_string()
     } else {
         format!("{{{}}}", id)

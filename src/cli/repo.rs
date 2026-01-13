@@ -408,7 +408,7 @@ impl RepoCommand {
 
     /// List repositories
     async fn list(&self, args: &ListArgs, global: &GlobalOptions) -> Result<()> {
-        let config = Config::load().unwrap_or_default();
+        let _config = Config::load().unwrap_or_default();
         let keyring = KeyringStore::new();
 
         // Determine host and type
@@ -504,8 +504,8 @@ impl RepoCommand {
                 if !global.json {
                     println!("Repositories in '{}':\n", workspace);
                     println!(
-                        "{:<40} {:<10} {:<12} {}",
-                        "NAME", "VISIBILITY", "LANGUAGE", "DESCRIPTION"
+                        "{:<40} {:<10} {:<12} DESCRIPTION",
+                        "NAME", "VISIBILITY", "LANGUAGE"
                     );
                     println!("{}", "-".repeat(90));
                 }
@@ -557,8 +557,8 @@ impl RepoCommand {
                 if !global.json {
                     println!("Repositories in '{}':\n", project);
                     println!(
-                        "{:<40} {:<10} {:<12} {}",
-                        "NAME", "VISIBILITY", "LANGUAGE", "DESCRIPTION"
+                        "{:<40} {:<10} {:<12} DESCRIPTION",
+                        "NAME", "VISIBILITY", "LANGUAGE"
                     );
                     println!("{}", "-".repeat(90));
                 }
@@ -709,7 +709,7 @@ impl RepoCommand {
 
     /// Create a new repository
     async fn create(&self, args: &CreateArgs, global: &GlobalOptions) -> Result<()> {
-        let config = Config::load().unwrap_or_default();
+        let _config = Config::load().unwrap_or_default();
         let keyring = KeyringStore::new();
 
         // Get repository name
@@ -762,7 +762,7 @@ impl RepoCommand {
                 name.to_lowercase().replace(' ', "-")
             );
 
-            let mut body = cloud_repos::CreateRepositoryRequest {
+            let body = cloud_repos::CreateRepositoryRequest {
                 name: name.clone(),
                 description: args.description.clone(),
                 is_private: Some(!args.public),
@@ -1195,7 +1195,7 @@ impl RepoCommand {
             anyhow::bail!("Archive is only available for Bitbucket Cloud repositories");
         }
 
-        let token = keyring
+        let _token = keyring
             .get(&context.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
@@ -1316,7 +1316,7 @@ impl RepoCommand {
     }
 
     /// Sync a fork with upstream
-    async fn sync(&self, args: &SyncArgs, global: &GlobalOptions) -> Result<()> {
+    async fn sync(&self, args: &SyncArgs, _global: &GlobalOptions) -> Result<()> {
         let branch = args.branch.as_deref().unwrap_or("main");
 
         println!("Syncing fork with upstream branch '{}'...", branch);
@@ -1393,8 +1393,10 @@ impl RepoCommand {
                 has_wiki: Option<bool>,
             }
 
-            let mut body = UpdateRequest::default();
-            body.description = args.description.clone();
+            let mut body = UpdateRequest {
+                description: args.description.clone(),
+                ..Default::default()
+            };
 
             if let Some(vis) = &args.visibility {
                 body.is_private = Some(vis == "private");
@@ -1441,8 +1443,10 @@ impl RepoCommand {
                 is_public: Option<bool>,
             }
 
-            let mut body = UpdateRequest::default();
-            body.description = args.description.clone();
+            let mut body = UpdateRequest {
+                description: args.description.clone(),
+                ..Default::default()
+            };
 
             if let Some(vis) = &args.visibility {
                 body.is_public = Some(vis == "public");
@@ -1484,7 +1488,7 @@ impl RepoCommand {
     async fn credits(&self, global: &GlobalOptions) -> Result<()> {
         let config = Config::load().unwrap_or_default();
         let resolver = ContextResolver::new(config.clone());
-        let keyring = KeyringStore::new();
+        let _keyring = KeyringStore::new();
 
         let context = resolver.resolve(global)?;
 

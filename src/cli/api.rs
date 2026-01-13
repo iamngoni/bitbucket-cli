@@ -29,7 +29,6 @@
 //! bb api /2.0/repositories/workspace/repo/commits --paginate
 //! ```
 
-use std::collections::HashMap;
 use std::fs;
 use std::time::Duration;
 
@@ -37,7 +36,7 @@ use anyhow::{bail, Result};
 use clap::Args;
 use console::style;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use reqwest::{Client, Method, StatusCode};
+use reqwest::{Client, Method};
 use serde_json::Value;
 
 use crate::auth::KeyringStore;
@@ -278,6 +277,7 @@ impl ApiCommand {
         Ok((parts[0].to_string(), parts[1].to_string()))
     }
 
+    #[allow(clippy::only_used_in_recursion)]
     fn set_nested_value(&self, obj: &mut serde_json::Map<String, Value>, key: &str, value: Value) {
         let parts: Vec<&str> = key.split('.').collect();
 
@@ -314,6 +314,7 @@ impl ApiCommand {
         Ok(headers)
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn execute_single(
         &self,
         client: &Client,
@@ -379,6 +380,7 @@ impl ApiCommand {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn execute_paginated(
         &self,
         client: &Client,

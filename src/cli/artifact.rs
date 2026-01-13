@@ -121,6 +121,7 @@ struct PipelineArtifact {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct Pipeline {
     build_number: u64,
     state: PipelineState,
@@ -129,6 +130,7 @@ struct Pipeline {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct PipelineState {
     name: String,
 }
@@ -147,7 +149,7 @@ impl crate::output::TableOutput for ArtifactListItem {
     fn print_table(&self, _color: bool) {
         let size_str = self
             .size
-            .map(|s| format_bytes(s))
+            .map(format_bytes)
             .unwrap_or_else(|| "-".to_string());
         let step_str = self
             .step
@@ -284,7 +286,7 @@ impl ArtifactCommand {
             for item in &items {
                 let size_str = item
                     .size
-                    .map(|s| format_bytes(s))
+                    .map(format_bytes)
                     .unwrap_or_else(|| "-".to_string());
 
                 let step_str = item
@@ -313,7 +315,7 @@ impl ArtifactCommand {
     /// Download an artifact
     async fn download(&self, args: &DownloadArgs, global: &GlobalOptions) -> Result<()> {
         let ctx = self.resolve_context(global)?;
-        let client = self.get_client(&ctx)?;
+        let _client = self.get_client(&ctx)?;
 
         // Ensure output directory exists
         let output_dir = Path::new(&args.dir);

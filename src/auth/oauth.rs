@@ -408,7 +408,7 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
     listener.set_nonblocking(false)?;
 
     // Spawn thread to handle the callback
-    let redirect_uri = config.redirect_uri.clone();
+    let _redirect_uri = config.redirect_uri.clone();
     std::thread::spawn(move || {
         if let Ok((mut stream, _)) = listener.accept() {
             let buf_reader = BufReader::new(&stream);
@@ -418,8 +418,7 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
                     let _ = tx.send(code);
 
                     // Send success response
-                    let response = format!(
-                        "HTTP/1.1 200 OK\r\n\
+                    let response = "HTTP/1.1 200 OK\r\n\
                          Content-Type: text/html\r\n\
                          Connection: close\r\n\
                          \r\n\
@@ -429,14 +428,12 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
                          <h1>Authentication Successful!</h1>\
                          <p>You can close this window and return to the terminal.</p>\
                          <script>window.close();</script>\
-                         </body></html>"
-                    );
+                         </body></html>";
                     let _ = stream.write_all(response.as_bytes());
                 } else {
                     // Check for error
                     if request_line.contains("error=") {
-                        let response = format!(
-                            "HTTP/1.1 400 Bad Request\r\n\
+                        let response = "HTTP/1.1 400 Bad Request\r\n\
                              Content-Type: text/html\r\n\
                              Connection: close\r\n\
                              \r\n\
@@ -446,8 +443,7 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
                              <h1>Authentication Failed</h1>\
                              <p>The authorization was denied or an error occurred.</p>\
                              <p>You can close this window and try again.</p>\
-                             </body></html>"
-                        );
+                             </body></html>";
                         let _ = stream.write_all(response.as_bytes());
                     }
                 }

@@ -641,7 +641,7 @@ impl PrCommand {
                     id: pr.id,
                     title: pr.title,
                     state: pr.state,
-                    author: pr.author.username.unwrap_or_else(|| pr.author.name),
+                    author: pr.author.username.unwrap_or(pr.author.name),
                     source_branch: pr.source.branch.name,
                     destination_branch: pr.destination.branch.name,
                     updated_on: pr.updated_on,
@@ -816,7 +816,7 @@ impl PrCommand {
                 title: pr.title,
                 description: pr.description,
                 state: pr.state,
-                author: pr.author.username.unwrap_or_else(|| pr.author.name),
+                author: pr.author.username.unwrap_or(pr.author.name),
                 source_branch: pr.source.branch.name,
                 destination_branch: pr.destination.branch.name,
                 reviewers,
@@ -2311,7 +2311,7 @@ impl PrCommand {
                 .into_iter()
                 .map(|c| PrComment {
                     id: c.id,
-                    author: c.user.username.unwrap_or_else(|| c.user.name),
+                    author: c.user.username.unwrap_or(c.user.name),
                     content: c.content.raw,
                     created_on: c.created_on,
                 })

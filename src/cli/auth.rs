@@ -16,13 +16,11 @@ use clap::{Args, Subcommand};
 
 use crate::auth::{
     get_cloud_username, oauth_login, read_token_from_stdin, refresh_oauth_token,
-    validate_cloud_token, validate_token, AuthType, KeyringStore, OAuthConfig, PersonalAccessToken,
-    Profile, ProfileManager, DEFAULT_CLIENT_ID,
+    validate_cloud_token, validate_token, KeyringStore, OAuthConfig, PersonalAccessToken,
+    DEFAULT_CLIENT_ID,
 };
 use crate::config::{Config, HostConfig};
-use crate::interactive::{
-    prompt_confirm_with_default, prompt_input, prompt_input_optional, prompt_password,
-};
+use crate::interactive::{prompt_confirm_with_default, prompt_input, prompt_password};
 
 use super::GlobalOptions;
 

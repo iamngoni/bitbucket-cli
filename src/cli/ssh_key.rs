@@ -117,6 +117,7 @@ struct SshKeyListItem {
 }
 
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct SshKeyDetail {
     uuid: String,
     label: String,
@@ -405,34 +406,32 @@ impl SshKeyCommand {
                 "output": combined_output.trim(),
             });
             println!("{}", serde_json::to_string_pretty(&result)?);
+        } else if combined_output.contains("logged in as") {
+            println!("{} SSH connection successful!", style("✓").green());
+            // Extract username if present
+            if let Some(start) = combined_output.find("logged in as") {
+                let user_part = &combined_output[start..];
+                if let Some(end) = user_part.find('.').or_else(|| user_part.find('\n')) {
+                    println!("  {}", &user_part[..end]);
+                }
+            }
+        } else if combined_output.contains("Permission denied") {
+            println!(
+                "{} SSH connection failed: Permission denied",
+                style("✗").red()
+            );
+            println!();
+            println!("Make sure you have:");
+            println!("  1. Generated an SSH key pair");
+            println!("  2. Added the public key to your Bitbucket account");
+            println!();
+            println!("Add a key with:");
+            println!("  bb ssh-key add --title \"My Key\" --key-file ~/.ssh/id_ed25519.pub");
         } else {
-            if combined_output.contains("logged in as") {
-                println!("{} SSH connection successful!", style("✓").green());
-                // Extract username if present
-                if let Some(start) = combined_output.find("logged in as") {
-                    let user_part = &combined_output[start..];
-                    if let Some(end) = user_part.find('.').or_else(|| user_part.find('\n')) {
-                        println!("  {}", &user_part[..end]);
-                    }
-                }
-            } else if combined_output.contains("Permission denied") {
-                println!(
-                    "{} SSH connection failed: Permission denied",
-                    style("✗").red()
-                );
+            println!("{} SSH connection status unknown", style("?").yellow());
+            if !combined_output.is_empty() {
                 println!();
-                println!("Make sure you have:");
-                println!("  1. Generated an SSH key pair");
-                println!("  2. Added the public key to your Bitbucket account");
-                println!();
-                println!("Add a key with:");
-                println!("  bb ssh-key add --title \"My Key\" --key-file ~/.ssh/id_ed25519.pub");
-            } else {
-                println!("{} SSH connection status unknown", style("?").yellow());
-                if !combined_output.is_empty() {
-                    println!();
-                    println!("Output: {}", combined_output.trim());
-                }
+                println!("Output: {}", combined_output.trim());
             }
         }
 

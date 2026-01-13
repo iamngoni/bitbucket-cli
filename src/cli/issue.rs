@@ -17,7 +17,7 @@ use std::fs;
 use anyhow::{bail, Result};
 use clap::{Args, Subcommand};
 use console::style;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::api::client::BitbucketClient;
 use crate::api::cloud::issues::{
