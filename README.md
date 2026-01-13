@@ -249,6 +249,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 **Ngonidzashe Mangudya** - [@iamngoni](https://github.com/iamngoni)
 
+## Co-Author
+
+[Claude Code](https://claude.ai/code)
+
 ---
 
 *Inspired by [GitHub CLI (gh)](https://cli.github.com)*
