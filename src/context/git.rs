@@ -293,11 +293,7 @@ impl GitContext {
     /// - The order of remotes is not guaranteed
     pub fn remote_names(&self) -> Result<Vec<String>> {
         let remotes = self.repo.remotes()?;
-        Ok(remotes
-            .iter()
-            .flatten()
-            .map(|s| s.to_string())
-            .collect())
+        Ok(remotes.iter().flatten().map(|s| s.to_string()).collect())
     }
 
     /// Returns the working directory path of the repository.

@@ -15,13 +15,13 @@ use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 
 use crate::auth::{
-    oauth_login, refresh_oauth_token, validate_cloud_token, get_cloud_username,
-    validate_token, read_token_from_stdin, OAuthConfig, DEFAULT_CLIENT_ID,
-    KeyringStore, ProfileManager, Profile, AuthType, PersonalAccessToken,
+    get_cloud_username, oauth_login, read_token_from_stdin, refresh_oauth_token,
+    validate_cloud_token, validate_token, AuthType, KeyringStore, OAuthConfig, PersonalAccessToken,
+    Profile, ProfileManager, DEFAULT_CLIENT_ID,
 };
 use crate::config::{Config, HostConfig};
 use crate::interactive::{
-    prompt_input, prompt_input_optional, prompt_password, prompt_confirm_with_default,
+    prompt_confirm_with_default, prompt_input, prompt_input_optional, prompt_password,
 };
 
 use super::GlobalOptions;
@@ -238,13 +238,16 @@ async fn login_cloud(args: &LoginArgs) -> Result<()> {
     let username = get_cloud_username(&token).await?;
     let mut config = Config::load()?;
 
-    config.hosts.insert(host.to_string(), HostConfig {
-        host: host.to_string(),
-        user: username.clone(),
-        default_workspace: None,
-        default_project: None,
-        api_version: Some("2.0".to_string()),
-    });
+    config.hosts.insert(
+        host.to_string(),
+        HostConfig {
+            host: host.to_string(),
+            user: username.clone(),
+            default_workspace: None,
+            default_project: None,
+            api_version: Some("2.0".to_string()),
+        },
+    );
     config.save()?;
 
     if let Some(user) = username {
@@ -320,13 +323,16 @@ async fn login_server(args: &LoginArgs) -> Result<()> {
     let username = pat.get_username().await?;
     let mut config = Config::load()?;
 
-    config.hosts.insert(host_key.clone(), HostConfig {
-        host: host_key.clone(),
-        user: username.clone(),
-        default_workspace: None,
-        default_project: None,
-        api_version: Some("1.0".to_string()),
-    });
+    config.hosts.insert(
+        host_key.clone(),
+        HostConfig {
+            host: host_key.clone(),
+            user: username.clone(),
+            default_workspace: None,
+            default_project: None,
+            api_version: Some("1.0".to_string()),
+        },
+    );
     config.save()?;
 
     if let Some(user) = username {
@@ -377,7 +383,12 @@ async fn logout(args: &LogoutArgs) -> Result<()> {
                 }
                 let choice = prompt_input("Select host to log out from:")?;
                 let idx: usize = choice.trim().parse().context("Invalid selection")?;
-                config.hosts.keys().nth(idx - 1).cloned().unwrap_or_default()
+                config
+                    .hosts
+                    .keys()
+                    .nth(idx - 1)
+                    .cloned()
+                    .unwrap_or_default()
             }
         };
 
@@ -426,7 +437,14 @@ async fn status(args: &StatusArgs) -> Result<()> {
         if let Some(ref user) = host_config.user {
             println!("  Logged in as: {}", user);
         }
-        println!("  Status: {}", if is_valid { "Active" } else { "Invalid/Expired" });
+        println!(
+            "  Status: {}",
+            if is_valid {
+                "Active"
+            } else {
+                "Invalid/Expired"
+            }
+        );
 
         if args.show_token {
             if let Some(ref t) = token {
@@ -450,8 +468,9 @@ async fn refresh() -> Result<()> {
     let host = "bitbucket.org";
 
     // Get refresh token
-    let refresh_token = keyring.get(&format!("{}.refresh", host))?
-        .ok_or_else(|| anyhow::anyhow!("No refresh token found. Please re-authenticate with 'bb auth login'"))?;
+    let refresh_token = keyring.get(&format!("{}.refresh", host))?.ok_or_else(|| {
+        anyhow::anyhow!("No refresh token found. Please re-authenticate with 'bb auth login'")
+    })?;
 
     println!("Refreshing token...");
     let tokens = refresh_oauth_token(&refresh_token, None, None).await?;
@@ -529,7 +548,8 @@ async fn token(args: &TokenArgs) -> Result<()> {
         anyhow::bail!("Multiple hosts configured. Specify one with --host");
     };
 
-    let token = keyring.get(&host)?
+    let token = keyring
+        .get(&host)?
         .ok_or_else(|| anyhow::anyhow!("No token found for {}", host))?;
 
     // Print just the token (useful for piping to other commands)
@@ -546,7 +566,12 @@ async fn setup_git() -> Result<()> {
 
     // Configure git to use bb as the credential helper for Bitbucket
     let result = Command::new("git")
-        .args(["config", "--global", "credential.https://bitbucket.org.helper", "!bb auth git-credential"])
+        .args([
+            "config",
+            "--global",
+            "credential.https://bitbucket.org.helper",
+            "!bb auth git-credential",
+        ])
         .status();
 
     match result {
@@ -606,6 +631,6 @@ fn mask_token(token: &str) -> String {
     if token.len() <= 8 {
         "*".repeat(token.len())
     } else {
-        format!("{}...{}", &token[..4], &token[token.len()-4..])
+        format!("{}...{}", &token[..4], &token[token.len() - 4..])
     }
 }

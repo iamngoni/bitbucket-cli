@@ -41,8 +41,8 @@ use clap::{Args, Subcommand};
 use console::style;
 use serde::{Deserialize, Serialize};
 
-use crate::api::BitbucketClient;
 use crate::api::common::PaginatedResponse;
+use crate::api::BitbucketClient;
 use crate::auth::{AuthCredential, KeyringStore};
 use crate::config::Config;
 use crate::context::{ContextResolver, HostType, RepoContext};
@@ -184,16 +184,16 @@ impl crate::output::TableOutput for VariableListItem {
         } else {
             self.value.clone().unwrap_or_else(|| "-".to_string())
         };
-        println!(
-            "{:<30} {:<10} {}",
-            &self.key,
-            secured_str,
-            value_str
-        );
+        println!("{:<30} {:<10} {}", &self.key, secured_str, value_str);
     }
 
     fn print_markdown(&self) {
-        println!("| {} | {} | {} |", self.key, self.secured, self.value.as_deref().unwrap_or("-"));
+        println!(
+            "| {} | {} | {} |",
+            self.key,
+            self.secured,
+            self.value.as_deref().unwrap_or("-")
+        );
     }
 }
 
@@ -220,7 +220,8 @@ impl SecretCommand {
         };
 
         let keyring = KeyringStore::new();
-        let token = keyring.get(&ctx.host)?
+        let token = keyring
+            .get(&ctx.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         Ok(client.with_auth(AuthCredential::OAuth {
@@ -316,12 +317,7 @@ impl SecretCommand {
                     item.value.clone().unwrap_or_else(|| "-".to_string())
                 };
 
-                println!(
-                    "{:<30} {:<10} {}",
-                    item.key,
-                    secured_str,
-                    value_str
-                );
+                println!("{:<30} {:<10} {}", item.key, secured_str, value_str);
             }
 
             println!();
@@ -351,9 +347,7 @@ impl SecretCommand {
         } else {
             // Prompt for value
             use dialoguer::Password;
-            Password::new()
-                .with_prompt("Enter value")
-                .interact()?
+            Password::new().with_prompt("Enter value").interact()?
         };
 
         // Determine the URL based on scope
@@ -516,7 +510,11 @@ impl SecretCommand {
             // Parse KEY=VALUE
             if let Some((key, value)) = line.split_once('=') {
                 let key = key.trim().to_string();
-                let value = value.trim().trim_matches('"').trim_matches('\'').to_string();
+                let value = value
+                    .trim()
+                    .trim_matches('"')
+                    .trim_matches('\'')
+                    .to_string();
                 env_vars.push((key, value));
             }
         }

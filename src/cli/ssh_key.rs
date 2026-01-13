@@ -35,8 +35,8 @@ use clap::{Args, Subcommand};
 use console::style;
 use serde::{Deserialize, Serialize};
 
-use crate::api::BitbucketClient;
 use crate::api::common::PaginatedResponse;
+use crate::api::BitbucketClient;
 use crate::auth::{AuthCredential, KeyringStore};
 use crate::config::Config;
 use crate::context::{ContextResolver, HostType};
@@ -175,7 +175,8 @@ impl SshKeyCommand {
         };
 
         let keyring = KeyringStore::new();
-        let token = keyring.get(host)?
+        let token = keyring
+            .get(host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         Ok(client.with_auth(AuthCredential::OAuth {
@@ -373,7 +374,11 @@ impl SshKeyCommand {
             HostType::Server => &format!("git@{}", host),
         };
 
-        println!("{} Testing SSH connection to {}...", style("→").cyan(), ssh_host);
+        println!(
+            "{} Testing SSH connection to {}...",
+            style("→").cyan(),
+            ssh_host
+        );
         println!();
 
         // Run ssh -T to test connection
@@ -411,7 +416,10 @@ impl SshKeyCommand {
                     }
                 }
             } else if combined_output.contains("Permission denied") {
-                println!("{} SSH connection failed: Permission denied", style("✗").red());
+                println!(
+                    "{} SSH connection failed: Permission denied",
+                    style("✗").red()
+                );
                 println!();
                 println!("Make sure you have:");
                 println!("  1. Generated an SSH key pair");

@@ -86,11 +86,7 @@ impl BrowseCommand {
             println!("{}", url);
         } else {
             let target = self.describe_target();
-            println!(
-                "{} Opening {} in browser...",
-                style("→").cyan(),
-                target
-            );
+            println!("{} Opening {} in browser...", style("→").cyan(), target);
             open_browser(&url)?;
         }
 
@@ -142,10 +138,7 @@ impl BrowseCommand {
 
     /// Build URL for Bitbucket Cloud
     fn build_cloud_url(&self, ctx: &RepoContext) -> Result<String> {
-        let base = format!(
-            "https://bitbucket.org/{}/{}",
-            ctx.owner, ctx.repo_slug
-        );
+        let base = format!("https://bitbucket.org/{}/{}", ctx.owner, ctx.repo_slug);
 
         // Handle special pages
         if self.settings {
@@ -170,7 +163,10 @@ impl BrowseCommand {
 
         if self.projects {
             // Projects page is at workspace level
-            return Ok(format!("https://bitbucket.org/{}/workspace/projects", ctx.owner));
+            return Ok(format!(
+                "https://bitbucket.org/{}/workspace/projects",
+                ctx.owner
+            ));
         }
 
         if self.branches {

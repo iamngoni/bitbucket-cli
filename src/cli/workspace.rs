@@ -18,8 +18,8 @@ use console::style;
 use serde::{Deserialize, Serialize};
 
 use crate::api::client::BitbucketClient;
-use crate::api::common::PaginatedResponse;
 use crate::api::cloud::workspaces::{Workspace, WorkspaceMember};
+use crate::api::common::PaginatedResponse;
 use crate::auth::{AuthCredential, KeyringStore};
 use crate::config::Config;
 use crate::output::{OutputFormat, OutputWriter, TableOutput};
@@ -240,18 +240,12 @@ impl TableOutput for MemberListItem {
 
         let nickname = self.nickname.as_deref().unwrap_or("-");
 
-        println!(
-            "{:<30} {:<20} {}",
-            name, nickname, self.uuid
-        );
+        println!("{:<30} {:<20} {}", name, nickname, self.uuid);
     }
 
     fn print_markdown(&self) {
         let nickname = self.nickname.as_deref().unwrap_or("-");
-        println!(
-            "| {} | {} | {} |",
-            self.display_name, nickname, self.uuid
-        );
+        println!("| {} | {} | {} |", self.display_name, nickname, self.uuid);
     }
 }
 
@@ -329,13 +323,14 @@ impl WorkspaceCommand {
         let keyring = KeyringStore::new();
         let host = "bitbucket.org";
 
-        let token = keyring.get(host)?
-            .ok_or_else(|| anyhow::anyhow!(
+        let token = keyring.get(host)?.ok_or_else(|| {
+            anyhow::anyhow!(
                 "Not authenticated with Bitbucket Cloud. Run 'bb auth login --cloud' first."
-            ))?;
+            )
+        })?;
 
-        let client = BitbucketClient::cloud()?
-            .with_auth(AuthCredential::PersonalAccessToken { token });
+        let client =
+            BitbucketClient::cloud()?.with_auth(AuthCredential::PersonalAccessToken { token });
 
         Ok(client)
     }
@@ -345,21 +340,20 @@ impl WorkspaceCommand {
         let client = self.get_client()?;
 
         // Get workspaces the user has permission to access
-        let url = format!(
-            "/user/permissions/workspaces?pagelen={}",
-            args.limit
-        );
+        let url = format!("/user/permissions/workspaces?pagelen={}", args.limit);
 
         let response: PaginatedResponse<WorkspacePermission> = client.get(&url).await?;
 
-        let items: Vec<WorkspaceListItem> = response.values.into_iter().map(|wp| {
-            WorkspaceListItem {
+        let items: Vec<WorkspaceListItem> = response
+            .values
+            .into_iter()
+            .map(|wp| WorkspaceListItem {
                 slug: wp.workspace.slug,
                 name: wp.workspace.name,
                 permission: wp.permission,
                 is_private: wp.workspace.is_private,
-            }
-        }).collect();
+            })
+            .collect();
 
         if items.is_empty() {
             println!("No workspaces found.");
@@ -392,11 +386,15 @@ impl WorkspaceCommand {
 
     /// View workspace details
     async fn view(&self, args: &ViewArgs, global: &GlobalOptions) -> Result<()> {
-        let workspace_slug = args.workspace.as_ref()
+        let workspace_slug = args
+            .workspace
+            .as_ref()
             .or(global.workspace.as_ref())
-            .ok_or_else(|| anyhow::anyhow!(
-                "Workspace required. Specify with argument or use --workspace flag."
-            ))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Workspace required. Specify with argument or use --workspace flag."
+                )
+            })?;
 
         if args.web {
             let url = format!("https://bitbucket.org/{}/", workspace_slug);
@@ -426,11 +424,15 @@ impl WorkspaceCommand {
 
     /// List workspace members
     async fn members(&self, args: &MembersArgs, global: &GlobalOptions) -> Result<()> {
-        let workspace_slug = args.workspace.as_ref()
+        let workspace_slug = args
+            .workspace
+            .as_ref()
             .or(global.workspace.as_ref())
-            .ok_or_else(|| anyhow::anyhow!(
-                "Workspace required. Specify with argument or use --workspace flag."
-            ))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Workspace required. Specify with argument or use --workspace flag."
+                )
+            })?;
 
         let client = self.get_client()?;
 
@@ -446,14 +448,16 @@ impl WorkspaceCommand {
 
         let response: PaginatedResponse<WorkspaceMember> = client.get(&url).await?;
 
-        let items: Vec<MemberListItem> = response.values.into_iter().map(|m| {
-            MemberListItem {
+        let items: Vec<MemberListItem> = response
+            .values
+            .into_iter()
+            .map(|m| MemberListItem {
                 display_name: m.user.display_name,
                 nickname: m.user.nickname,
                 account_id: m.user.account_id,
                 uuid: m.user.uuid,
-            }
-        }).collect();
+            })
+            .collect();
 
         if items.is_empty() {
             println!("No members found.");
@@ -487,11 +491,15 @@ impl WorkspaceCommand {
 
     /// List projects in workspace
     async fn projects(&self, args: &ProjectsArgs, global: &GlobalOptions) -> Result<()> {
-        let workspace_slug = args.workspace.as_ref()
+        let workspace_slug = args
+            .workspace
+            .as_ref()
             .or(global.workspace.as_ref())
-            .ok_or_else(|| anyhow::anyhow!(
-                "Workspace required. Specify with argument or use --workspace flag."
-            ))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Workspace required. Specify with argument or use --workspace flag."
+                )
+            })?;
 
         let client = self.get_client()?;
 
@@ -502,14 +510,16 @@ impl WorkspaceCommand {
 
         let response: PaginatedResponse<WorkspaceProject> = client.get(&url).await?;
 
-        let items: Vec<ProjectListItem> = response.values.into_iter().map(|p| {
-            ProjectListItem {
+        let items: Vec<ProjectListItem> = response
+            .values
+            .into_iter()
+            .map(|p| ProjectListItem {
                 key: p.key,
                 name: p.name,
                 description: p.description,
                 is_private: p.is_private,
-            }
-        }).collect();
+            })
+            .collect();
 
         if items.is_empty() {
             println!("No projects found in workspace '{}'.", workspace_slug);
@@ -548,11 +558,12 @@ impl WorkspaceCommand {
         let client = self.get_client()?;
         let url = format!("/workspaces/{}", args.workspace);
 
-        let workspace: Workspace = client.get(&url).await
-            .map_err(|_| anyhow::anyhow!(
+        let workspace: Workspace = client.get(&url).await.map_err(|_| {
+            anyhow::anyhow!(
                 "Workspace '{}' not found or you don't have access to it.",
                 args.workspace
-            ))?;
+            )
+        })?;
 
         // Update config
         let mut config = Config::load()?;
@@ -573,14 +584,14 @@ impl WorkspaceCommand {
             println!("{}", serde_json::to_string_pretty(&result)?);
         } else {
             println!();
-            println!(
-                "{} Switched default workspace",
-                style("✓").green()
-            );
+            println!("{} Switched default workspace", style("✓").green());
             println!();
             println!("  Workspace: {} ({})", workspace.name, workspace.slug);
             println!();
-            println!("Future commands will use '{}' as the default workspace.", workspace.slug);
+            println!(
+                "Future commands will use '{}' as the default workspace.",
+                workspace.slug
+            );
         }
 
         Ok(())

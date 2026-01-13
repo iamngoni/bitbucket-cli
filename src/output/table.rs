@@ -403,18 +403,10 @@ pub fn format_status(status: &str, color: bool) -> String {
 
     use console::style;
     match status.to_lowercase().as_str() {
-        "open" | "active" | "running" | "in_progress" => {
-            style(status).green().to_string()
-        }
-        "merged" | "completed" | "passed" | "successful" => {
-            style(status).blue().to_string()
-        }
-        "declined" | "closed" | "failed" | "error" => {
-            style(status).red().to_string()
-        }
-        "draft" | "pending" | "waiting" => {
-            style(status).yellow().to_string()
-        }
+        "open" | "active" | "running" | "in_progress" => style(status).green().to_string(),
+        "merged" | "completed" | "passed" | "successful" => style(status).blue().to_string(),
+        "declined" | "closed" | "failed" | "error" => style(status).red().to_string(),
+        "draft" | "pending" | "waiting" => style(status).yellow().to_string(),
         _ => status.to_string(),
     }
 }

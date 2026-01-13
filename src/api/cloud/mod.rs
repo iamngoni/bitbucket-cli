@@ -48,11 +48,11 @@
 //! - UUIDs are returned with curly braces (e.g., `{123e4567-e89b-...}`)
 //! - Pagination uses cursor-based navigation with `next` and `previous` links
 
-pub mod repositories;
-pub mod pullrequests;
-pub mod workspaces;
-pub mod pipelines;
 pub mod issues;
+pub mod pipelines;
+pub mod pullrequests;
+pub mod repositories;
+pub mod workspaces;
 
 // Re-export common types
 pub use repositories::*;

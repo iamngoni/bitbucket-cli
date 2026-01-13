@@ -26,13 +26,13 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 
 use super::GlobalOptions;
-use crate::api::common::{PaginatedResponse, ServerPaginatedResponse};
 use crate::api::cloud::repositories as cloud_repos;
+use crate::api::common::{PaginatedResponse, ServerPaginatedResponse};
 use crate::api::server::repositories as server_repos;
 use crate::auth::KeyringStore;
 use crate::config::{is_cloud_host, Config};
 use crate::context::{ContextResolver, HostType, RepoContext};
-use crate::output::{OutputFormat, OutputWriter, TableOutput, print_field, print_header};
+use crate::output::{print_field, print_header, OutputFormat, OutputWriter, TableOutput};
 
 /// Manage repositories
 #[derive(Args, Debug)]
@@ -283,7 +283,8 @@ impl TableOutput for RepoListItem {
 
     fn print_markdown(&self) {
         let visibility = if self.is_private { "private" } else { "public" };
-        println!("- **{}** ({}) - {}",
+        println!(
+            "- **{}** ({}) - {}",
             self.full_name,
             visibility,
             self.description.as_deref().unwrap_or("No description")
@@ -411,15 +412,18 @@ impl RepoCommand {
         let keyring = KeyringStore::new();
 
         // Determine host and type
-        let host = global.host.clone()
+        let host = global
+            .host
+            .clone()
             .or_else(|| args.workspace.as_ref().map(|_| "bitbucket.org".to_string()))
             .unwrap_or_else(|| "bitbucket.org".to_string());
 
         let is_cloud = is_cloud_host(&host);
 
         // Get authentication token
-        let token = keyring.get(&host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", host))?;
+        let token = keyring.get(&host)?.ok_or_else(|| {
+            anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", host)
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -433,9 +437,13 @@ impl RepoCommand {
 
         if is_cloud {
             // Bitbucket Cloud
-            let workspace = args.workspace.as_ref()
+            let workspace = args
+                .workspace
+                .as_ref()
                 .or(global.workspace.as_ref())
-                .ok_or_else(|| anyhow::anyhow!("Workspace required. Use --workspace or set default."))?;
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Workspace required. Use --workspace or set default.")
+                })?;
 
             let mut url = format!(
                 "https://api.bitbucket.org/2.0/repositories/{}?pagelen={}",
@@ -478,27 +486,36 @@ impl RepoCommand {
             let repos: PaginatedResponse<cloud_repos::Repository> = response.json().await?;
 
             // Convert to list items
-            let items: Vec<RepoListItem> = repos.values.into_iter().map(|r| RepoListItem {
-                full_name: r.full_name,
-                description: r.description,
-                is_private: r.is_private,
-                language: r.language,
-                updated_on: r.updated_on,
-            }).collect();
+            let items: Vec<RepoListItem> = repos
+                .values
+                .into_iter()
+                .map(|r| RepoListItem {
+                    full_name: r.full_name,
+                    description: r.description,
+                    is_private: r.is_private,
+                    language: r.language,
+                    updated_on: r.updated_on,
+                })
+                .collect();
 
             if items.is_empty() {
                 println!("No repositories found in workspace '{}'", workspace);
             } else {
                 if !global.json {
                     println!("Repositories in '{}':\n", workspace);
-                    println!("{:<40} {:<10} {:<12} {}", "NAME", "VISIBILITY", "LANGUAGE", "DESCRIPTION");
+                    println!(
+                        "{:<40} {:<10} {:<12} {}",
+                        "NAME", "VISIBILITY", "LANGUAGE", "DESCRIPTION"
+                    );
                     println!("{}", "-".repeat(90));
                 }
                 output.write_list(&items)?;
             }
         } else {
             // Bitbucket Server/DC
-            let project = args.project.as_ref()
+            let project = args
+                .project
+                .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("Project required for Server/DC. Use --project."))?;
 
             let url = format!(
@@ -522,20 +539,27 @@ impl RepoCommand {
             let repos: ServerPaginatedResponse<server_repos::Repository> = response.json().await?;
 
             // Convert to list items
-            let items: Vec<RepoListItem> = repos.values.into_iter().map(|r| RepoListItem {
-                full_name: format!("{}/{}", r.project.key, r.slug),
-                description: r.description,
-                is_private: !r.is_public,
-                language: None, // Server doesn't have language field
-                updated_on: "-".to_string(), // Server doesn't have updated_on in list
-            }).collect();
+            let items: Vec<RepoListItem> = repos
+                .values
+                .into_iter()
+                .map(|r| RepoListItem {
+                    full_name: format!("{}/{}", r.project.key, r.slug),
+                    description: r.description,
+                    is_private: !r.is_public,
+                    language: None,              // Server doesn't have language field
+                    updated_on: "-".to_string(), // Server doesn't have updated_on in list
+                })
+                .collect();
 
             if items.is_empty() {
                 println!("No repositories found in project '{}'", project);
             } else {
                 if !global.json {
                     println!("Repositories in '{}':\n", project);
-                    println!("{:<40} {:<10} {:<12} {}", "NAME", "VISIBILITY", "LANGUAGE", "DESCRIPTION");
+                    println!(
+                        "{:<40} {:<10} {:<12} {}",
+                        "NAME", "VISIBILITY", "LANGUAGE", "DESCRIPTION"
+                    );
                     println!("{}", "-".repeat(90));
                 }
                 output.write_list(&items)?;
@@ -566,8 +590,12 @@ impl RepoCommand {
         }
 
         let keyring = KeyringStore::new();
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -636,16 +664,29 @@ impl RepoCommand {
             let repo: server_repos::Repository = response.json().await?;
 
             // Extract clone URLs
-            let ssh_url = repo.links.clone.iter()
+            let ssh_url = repo
+                .links
+                .clone
+                .iter()
                 .find(|l| l.name == "ssh")
                 .map(|l| l.href.clone());
-            let https_url = repo.links.clone.iter()
+            let https_url = repo
+                .links
+                .clone
+                .iter()
                 .find(|l| l.name == "http")
                 .map(|l| l.href.clone());
-            let web_url = repo.links.self_link.first()
+            let web_url = repo
+                .links
+                .self_link
+                .first()
                 .map(|l| l.href.clone())
-                .unwrap_or_else(|| format!("https://{}/projects/{}/repos/{}",
-                    context.host, context.owner, context.repo_slug));
+                .unwrap_or_else(|| {
+                    format!(
+                        "https://{}/projects/{}/repos/{}",
+                        context.host, context.owner, context.repo_slug
+                    )
+                });
 
             RepoDetail {
                 full_name: format!("{}/{}", repo.project.key, repo.slug),
@@ -683,14 +724,17 @@ impl RepoCommand {
         };
 
         // Determine host
-        let host = global.host.clone()
+        let host = global
+            .host
+            .clone()
             .unwrap_or_else(|| "bitbucket.org".to_string());
 
         let is_cloud = is_cloud_host(&host);
 
         // Get authentication token
-        let token = keyring.get(&host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", host))?;
+        let token = keyring.get(&host)?.ok_or_else(|| {
+            anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", host)
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -704,20 +748,28 @@ impl RepoCommand {
 
         if is_cloud {
             // Bitbucket Cloud
-            let workspace = args.workspace.as_ref()
+            let workspace = args
+                .workspace
+                .as_ref()
                 .or(global.workspace.as_ref())
-                .ok_or_else(|| anyhow::anyhow!("Workspace required. Use --workspace or set default."))?;
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Workspace required. Use --workspace or set default.")
+                })?;
 
             let url = format!(
                 "https://api.bitbucket.org/2.0/repositories/{}/{}",
-                workspace, name.to_lowercase().replace(' ', "-")
+                workspace,
+                name.to_lowercase().replace(' ', "-")
             );
 
             let mut body = cloud_repos::CreateRepositoryRequest {
                 name: name.clone(),
                 description: args.description.clone(),
                 is_private: Some(!args.public),
-                project: args.project.as_ref().map(|p| cloud_repos::ProjectKey { key: p.clone() }),
+                project: args
+                    .project
+                    .as_ref()
+                    .map(|p| cloud_repos::ProjectKey { key: p.clone() }),
                 language: None,
             };
 
@@ -746,13 +798,12 @@ impl RepoCommand {
             }
         } else {
             // Bitbucket Server/DC
-            let project = args.project.as_ref()
+            let project = args
+                .project
+                .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("Project required for Server/DC. Use --project."))?;
 
-            let url = format!(
-                "https://{}/rest/api/1.0/projects/{}/repos",
-                host, project
-            );
+            let url = format!("https://{}/rest/api/1.0/projects/{}/repos", host, project);
 
             let body = server_repos::CreateRepositoryRequest {
                 name: name.clone(),
@@ -778,7 +829,10 @@ impl RepoCommand {
 
             let repo: server_repos::Repository = response.json().await?;
 
-            output.write_success(&format!("Created repository {}/{}", repo.project.key, repo.slug));
+            output.write_success(&format!(
+                "Created repository {}/{}",
+                repo.project.key, repo.slug
+            ));
 
             // Clone if requested
             if args.clone {
@@ -797,9 +851,10 @@ impl RepoCommand {
         let keyring = KeyringStore::new();
 
         // Check if it's already a URL
-        let clone_url = if args.repo.starts_with("git@") ||
-                           args.repo.starts_with("https://") ||
-                           args.repo.starts_with("ssh://") {
+        let clone_url = if args.repo.starts_with("git@")
+            || args.repo.starts_with("https://")
+            || args.repo.starts_with("ssh://")
+        {
             args.repo.clone()
         } else {
             // Parse as WORKSPACE/REPO or PROJECT/REPO
@@ -811,14 +866,24 @@ impl RepoCommand {
 
             if context.host_type == HostType::Cloud {
                 if use_ssh {
-                    format!("git@bitbucket.org:{}/{}.git", context.owner, context.repo_slug)
+                    format!(
+                        "git@bitbucket.org:{}/{}.git",
+                        context.owner, context.repo_slug
+                    )
                 } else {
-                    format!("https://bitbucket.org/{}/{}.git", context.owner, context.repo_slug)
+                    format!(
+                        "https://bitbucket.org/{}/{}.git",
+                        context.owner, context.repo_slug
+                    )
                 }
             } else {
                 // For server, we need to fetch the actual clone URL
-                let token = keyring.get(&context.host)?
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+                let token = keyring.get(&context.host)?.ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Not authenticated for {}. Run 'bb auth login' first.",
+                        context.host
+                    )
+                })?;
 
                 let client = Client::builder()
                     .user_agent(format!("bb/{}", crate::VERSION))
@@ -829,20 +894,22 @@ impl RepoCommand {
                     context.host, context.owner, context.repo_slug
                 );
 
-                let response = client
-                    .get(&url)
-                    .bearer_auth(&token)
-                    .send()
-                    .await?;
+                let response = client.get(&url).bearer_auth(&token).send().await?;
 
                 if !response.status().is_success() {
-                    anyhow::bail!("Repository not found: {}/{}", context.owner, context.repo_slug);
+                    anyhow::bail!(
+                        "Repository not found: {}/{}",
+                        context.owner,
+                        context.repo_slug
+                    );
                 }
 
                 let repo: server_repos::Repository = response.json().await?;
 
                 let link_name = if use_ssh { "ssh" } else { "http" };
-                repo.links.clone.iter()
+                repo.links
+                    .clone
+                    .iter()
                     .find(|l| l.name == link_name)
                     .map(|l| l.href.clone())
                     .ok_or_else(|| anyhow::anyhow!("No {} clone URL available", link_name))?
@@ -869,11 +936,13 @@ impl RepoCommand {
             cmd.arg(dir);
         }
 
-        let status = cmd.status()
-            .context("Failed to execute git clone")?;
+        let status = cmd.status().context("Failed to execute git clone")?;
 
         if !status.success() {
-            anyhow::bail!("git clone failed with exit code: {}", status.code().unwrap_or(-1));
+            anyhow::bail!(
+                "git clone failed with exit code: {}",
+                status.code().unwrap_or(-1)
+            );
         }
 
         Ok(())
@@ -892,8 +961,12 @@ impl RepoCommand {
             resolver.resolve(global)?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -907,9 +980,13 @@ impl RepoCommand {
 
         if context.host_type == HostType::Cloud {
             // Bitbucket Cloud
-            let target_workspace = args.workspace.as_ref()
+            let target_workspace = args
+                .workspace
+                .as_ref()
                 .or(global.workspace.as_ref())
-                .ok_or_else(|| anyhow::anyhow!("Target workspace required for fork. Use --workspace."))?;
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Target workspace required for fork. Use --workspace.")
+                })?;
 
             let url = format!(
                 "https://api.bitbucket.org/2.0/repositories/{}/{}/forks",
@@ -964,8 +1041,9 @@ impl RepoCommand {
             );
 
             // For Server, we need to specify target project
-            let target_project = args.workspace.as_ref()
-                .ok_or_else(|| anyhow::anyhow!("Target project required for Server/DC fork. Use --workspace."))?;
+            let target_project = args.workspace.as_ref().ok_or_else(|| {
+                anyhow::anyhow!("Target project required for Server/DC fork. Use --workspace.")
+            })?;
 
             #[derive(Serialize)]
             struct ForkRequest {
@@ -1031,7 +1109,10 @@ impl RepoCommand {
         if !args.confirm {
             use dialoguer::Confirm;
             let confirmed = Confirm::new()
-                .with_prompt(format!("Are you sure you want to delete {}? This cannot be undone!", context.full_name()))
+                .with_prompt(format!(
+                    "Are you sure you want to delete {}? This cannot be undone!",
+                    context.full_name()
+                ))
                 .default(false)
                 .interact()?;
 
@@ -1041,8 +1122,12 @@ impl RepoCommand {
             }
         }
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1110,7 +1195,8 @@ impl RepoCommand {
             anyhow::bail!("Archive is only available for Bitbucket Cloud repositories");
         }
 
-        let token = keyring.get(&context.host)?
+        let token = keyring
+            .get(&context.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         // Archive is done via a PUT to update the repo with archived=true
@@ -1145,7 +1231,8 @@ impl RepoCommand {
 
         let context = resolver.resolve(global)?;
 
-        let token = keyring.get(&context.host)?
+        let token = keyring
+            .get(&context.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         let client = Client::builder()
@@ -1186,7 +1273,10 @@ impl RepoCommand {
                 anyhow::bail!("Failed to rename repository ({}): {}", status, text);
             }
 
-            output.write_success(&format!("Renamed repository to {}/{}", context.owner, args.new_name));
+            output.write_success(&format!(
+                "Renamed repository to {}/{}",
+                context.owner, args.new_name
+            ));
         } else {
             // Server uses a different endpoint for renaming
             let url = format!(
@@ -1216,7 +1306,10 @@ impl RepoCommand {
                 anyhow::bail!("Failed to rename repository ({}): {}", status, text);
             }
 
-            output.write_success(&format!("Renamed repository to {}/{}", context.owner, args.new_name));
+            output.write_success(&format!(
+                "Renamed repository to {}/{}",
+                context.owner, args.new_name
+            ));
         }
 
         Ok(())
@@ -1268,7 +1361,8 @@ impl RepoCommand {
 
         let context = resolver.resolve(global)?;
 
-        let token = keyring.get(&context.host)?
+        let token = keyring
+            .get(&context.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         let client = Client::builder()
@@ -1417,7 +1511,11 @@ impl RepoCommand {
 // Helper method for ContextResolver
 impl ContextResolver {
     /// Parse repo argument with host override
-    pub fn parse_repo_arg_with_host(&self, repo: &str, options: &GlobalOptions) -> Result<RepoContext> {
+    pub fn parse_repo_arg_with_host(
+        &self,
+        repo: &str,
+        options: &GlobalOptions,
+    ) -> Result<RepoContext> {
         let parts: Vec<&str> = repo.split('/').collect();
         if parts.len() != 2 {
             anyhow::bail!("Invalid repository format. Expected WORKSPACE/REPO or PROJECT/REPO");
@@ -1426,7 +1524,10 @@ impl ContextResolver {
         let owner = parts[0].to_string();
         let repo_slug = parts[1].to_string();
 
-        let host = options.host.clone().unwrap_or_else(|| "bitbucket.org".to_string());
+        let host = options
+            .host
+            .clone()
+            .unwrap_or_else(|| "bitbucket.org".to_string());
         let host_type = if is_cloud_host(&host) {
             HostType::Cloud
         } else {

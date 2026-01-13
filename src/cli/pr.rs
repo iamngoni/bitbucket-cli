@@ -14,13 +14,13 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 
 use super::GlobalOptions;
-use crate::api::common::{PaginatedResponse, ServerPaginatedResponse};
 use crate::api::cloud::pullrequests as cloud_prs;
+use crate::api::common::{PaginatedResponse, ServerPaginatedResponse};
 use crate::api::server::pullrequests as server_prs;
 use crate::auth::KeyringStore;
 use crate::config::Config;
 use crate::context::{ContextResolver, HostType, RepoContext};
-use crate::output::{OutputFormat, OutputWriter, TableOutput, print_field, print_header};
+use crate::output::{print_field, print_header, OutputFormat, OutputWriter, TableOutput};
 
 /// Manage pull requests
 #[derive(Args, Debug)]
@@ -488,7 +488,10 @@ impl TableOutput for PrDetail {
         if !self.reviewers.is_empty() {
             println!("**Reviewers**: {}", self.reviewers.join(", "));
         }
-        println!("**Approvals**: {} | **Comments**: {}", self.approvals, self.comment_count);
+        println!(
+            "**Approvals**: {} | **Comments**: {}",
+            self.approvals, self.comment_count
+        );
         println!();
 
         if let Some(desc) = &self.description {
@@ -565,8 +568,12 @@ impl PrCommand {
 
         let context = resolver.resolve(global)?;
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -627,22 +634,32 @@ impl PrCommand {
 
             let prs: PaginatedResponse<cloud_prs::PullRequest> = response.json().await?;
 
-            let items: Vec<PrListItem> = prs.values.into_iter().map(|pr| PrListItem {
-                id: pr.id,
-                title: pr.title,
-                state: pr.state,
-                author: pr.author.username.unwrap_or_else(|| pr.author.name),
-                source_branch: pr.source.branch.name,
-                destination_branch: pr.destination.branch.name,
-                updated_on: pr.updated_on,
-            }).collect();
+            let items: Vec<PrListItem> = prs
+                .values
+                .into_iter()
+                .map(|pr| PrListItem {
+                    id: pr.id,
+                    title: pr.title,
+                    state: pr.state,
+                    author: pr.author.username.unwrap_or_else(|| pr.author.name),
+                    source_branch: pr.source.branch.name,
+                    destination_branch: pr.destination.branch.name,
+                    updated_on: pr.updated_on,
+                })
+                .collect();
 
             if items.is_empty() {
                 println!("No pull requests found");
             } else {
                 if !global.json {
-                    println!("Pull requests in {}/{}:\n", context.owner, context.repo_slug);
-                    println!("{:<8} {:<10} {:<50} {:<15} BRANCHES", "ID", "STATE", "TITLE", "AUTHOR");
+                    println!(
+                        "Pull requests in {}/{}:\n",
+                        context.owner, context.repo_slug
+                    );
+                    println!(
+                        "{:<8} {:<10} {:<50} {:<15} BRANCHES",
+                        "ID", "STATE", "TITLE", "AUTHOR"
+                    );
                     println!("{}", "-".repeat(100));
                 }
                 output.write_list(&items)?;
@@ -680,22 +697,32 @@ impl PrCommand {
 
             let prs: ServerPaginatedResponse<server_prs::PullRequest> = response.json().await?;
 
-            let items: Vec<PrListItem> = prs.values.into_iter().map(|pr| PrListItem {
-                id: pr.id,
-                title: pr.title,
-                state: pr.state,
-                author: pr.author.user.display_name,
-                source_branch: pr.from_ref.display_id,
-                destination_branch: pr.to_ref.display_id,
-                updated_on: format_server_timestamp(pr.updated_date),
-            }).collect();
+            let items: Vec<PrListItem> = prs
+                .values
+                .into_iter()
+                .map(|pr| PrListItem {
+                    id: pr.id,
+                    title: pr.title,
+                    state: pr.state,
+                    author: pr.author.user.display_name,
+                    source_branch: pr.from_ref.display_id,
+                    destination_branch: pr.to_ref.display_id,
+                    updated_on: format_server_timestamp(pr.updated_date),
+                })
+                .collect();
 
             if items.is_empty() {
                 println!("No pull requests found");
             } else {
                 if !global.json {
-                    println!("Pull requests in {}/{}:\n", context.owner, context.repo_slug);
-                    println!("{:<8} {:<10} {:<50} {:<15} BRANCHES", "ID", "STATE", "TITLE", "AUTHOR");
+                    println!(
+                        "Pull requests in {}/{}:\n",
+                        context.owner, context.repo_slug
+                    );
+                    println!(
+                        "{:<8} {:<10} {:<50} {:<15} BRANCHES",
+                        "ID", "STATE", "TITLE", "AUTHOR"
+                    );
                     println!("{}", "-".repeat(100));
                 }
                 output.write_list(&items)?;
@@ -724,19 +751,27 @@ impl PrCommand {
         // If web flag, open in browser
         if args.web {
             let url = if context.host_type == HostType::Cloud {
-                format!("https://bitbucket.org/{}/{}/pull-requests/{}",
-                    context.owner, context.repo_slug, pr_number)
+                format!(
+                    "https://bitbucket.org/{}/{}/pull-requests/{}",
+                    context.owner, context.repo_slug, pr_number
+                )
             } else {
-                format!("https://{}/projects/{}/repos/{}/pull-requests/{}",
-                    context.host, context.owner, context.repo_slug, pr_number)
+                format!(
+                    "https://{}/projects/{}/repos/{}/pull-requests/{}",
+                    context.host, context.owner, context.repo_slug, pr_number
+                )
             };
             webbrowser::open(&url)?;
             println!("Opened PR #{} in browser", pr_number);
             return Ok(());
         }
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -770,7 +805,9 @@ impl PrCommand {
             let pr: cloud_prs::PullRequest = response.json().await?;
 
             let approvals = pr.participants.iter().filter(|p| p.approved).count() as u32;
-            let reviewers: Vec<String> = pr.reviewers.iter()
+            let reviewers: Vec<String> = pr
+                .reviewers
+                .iter()
                 .map(|r| r.username.clone().unwrap_or_else(|| r.name.clone()))
                 .collect();
 
@@ -787,8 +824,10 @@ impl PrCommand {
                 comment_count: pr.comment_count,
                 created_on: pr.created_on,
                 updated_on: pr.updated_on,
-                web_url: format!("https://bitbucket.org/{}/{}/pull-requests/{}",
-                    context.owner, context.repo_slug, pr_number),
+                web_url: format!(
+                    "https://bitbucket.org/{}/{}/pull-requests/{}",
+                    context.owner, context.repo_slug, pr_number
+                ),
             }
         } else {
             let url = format!(
@@ -812,7 +851,9 @@ impl PrCommand {
             let pr: server_prs::PullRequest = response.json().await?;
 
             let approvals = pr.reviewers.iter().filter(|r| r.approved).count() as u32;
-            let reviewers: Vec<String> = pr.reviewers.iter()
+            let reviewers: Vec<String> = pr
+                .reviewers
+                .iter()
                 .map(|r| r.user.display_name.clone())
                 .collect();
 
@@ -829,8 +870,10 @@ impl PrCommand {
                 comment_count: 0, // Server doesn't return this in PR response
                 created_on: format_server_timestamp(pr.created_date),
                 updated_on: format_server_timestamp(pr.updated_date),
-                web_url: format!("https://{}/projects/{}/repos/{}/pull-requests/{}",
-                    context.host, context.owner, context.repo_slug, pr_number),
+                web_url: format!(
+                    "https://{}/projects/{}/repos/{}/pull-requests/{}",
+                    context.host, context.owner, context.repo_slug, pr_number
+                ),
             }
         };
 
@@ -839,7 +882,8 @@ impl PrCommand {
         // Show comments if requested
         if args.comments {
             println!("\n--- Comments ---\n");
-            self.fetch_and_display_comments(&context, &token, pr_number, global).await?;
+            self.fetch_and_display_comments(&context, &token, pr_number, global)
+                .await?;
         }
 
         Ok(())
@@ -853,8 +897,12 @@ impl PrCommand {
 
         let context = resolver.resolve(global)?;
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         // Get source branch (current branch or specified)
         let source_branch = if let Some(head) = &args.head {
@@ -868,7 +916,10 @@ impl PrCommand {
             base.clone()
         } else {
             // Default to main/master
-            context.default_branch.clone().unwrap_or_else(|| "main".to_string())
+            context
+                .default_branch
+                .clone()
+                .unwrap_or_else(|| "main".to_string())
         };
 
         // Get title
@@ -890,7 +941,8 @@ impl PrCommand {
         } else if let Some(file) = &args.body_file {
             Some(std::fs::read_to_string(file)?)
         } else if args.fill {
-            self.get_commit_descriptions(&source_branch, &dest_branch).ok()
+            self.get_commit_descriptions(&source_branch, &dest_branch)
+                .ok()
         } else {
             None
         };
@@ -911,7 +963,9 @@ impl PrCommand {
                 context.owner, context.repo_slug
             );
 
-            let reviewers: Vec<cloud_prs::UserUuid> = args.reviewer.iter()
+            let reviewers: Vec<cloud_prs::UserUuid> = args
+                .reviewer
+                .iter()
                 .map(|r| cloud_prs::UserUuid { uuid: r.clone() })
                 .collect();
 
@@ -919,10 +973,14 @@ impl PrCommand {
                 title: title.clone(),
                 description,
                 source: cloud_prs::BranchSpec {
-                    branch: cloud_prs::BranchName { name: source_branch.clone() },
+                    branch: cloud_prs::BranchName {
+                        name: source_branch.clone(),
+                    },
                 },
                 destination: cloud_prs::BranchSpec {
-                    branch: cloud_prs::BranchName { name: dest_branch.clone() },
+                    branch: cloud_prs::BranchName {
+                        name: dest_branch.clone(),
+                    },
                 },
                 reviewers,
                 close_source_branch: Some(true),
@@ -949,8 +1007,10 @@ impl PrCommand {
                 pr.id, pr.title, source_branch, dest_branch
             ));
 
-            let pr_url = format!("https://bitbucket.org/{}/{}/pull-requests/{}",
-                context.owner, context.repo_slug, pr.id);
+            let pr_url = format!(
+                "https://bitbucket.org/{}/{}/pull-requests/{}",
+                context.owner, context.repo_slug, pr.id
+            );
             println!("View at: {}", pr_url);
 
             if args.web {
@@ -962,7 +1022,9 @@ impl PrCommand {
                 context.host, context.owner, context.repo_slug
             );
 
-            let reviewers: Vec<server_prs::UserRef> = args.reviewer.iter()
+            let reviewers: Vec<server_prs::UserRef> = args
+                .reviewer
+                .iter()
                 .map(|r| server_prs::UserRef {
                     user: server_prs::UserName { name: r.clone() },
                 })
@@ -975,14 +1037,18 @@ impl PrCommand {
                     id: format!("refs/heads/{}", source_branch),
                     repository: server_prs::RepositorySpec {
                         slug: context.repo_slug.clone(),
-                        project: server_prs::ProjectSpec { key: context.owner.clone() },
+                        project: server_prs::ProjectSpec {
+                            key: context.owner.clone(),
+                        },
                     },
                 },
                 to_ref: server_prs::RefSpec {
                     id: format!("refs/heads/{}", dest_branch),
                     repository: server_prs::RepositorySpec {
                         slug: context.repo_slug.clone(),
-                        project: server_prs::ProjectSpec { key: context.owner.clone() },
+                        project: server_prs::ProjectSpec {
+                            key: context.owner.clone(),
+                        },
                     },
                 },
                 reviewers,
@@ -1009,8 +1075,10 @@ impl PrCommand {
                 pr.id, pr.title, source_branch, dest_branch
             ));
 
-            let pr_url = format!("https://{}/projects/{}/repos/{}/pull-requests/{}",
-                context.host, context.owner, context.repo_slug, pr.id);
+            let pr_url = format!(
+                "https://{}/projects/{}/repos/{}/pull-requests/{}",
+                context.host, context.owner, context.repo_slug, pr.id
+            );
             println!("View at: {}", pr_url);
 
             if args.web {
@@ -1029,8 +1097,12 @@ impl PrCommand {
 
         let context = resolver.resolve(global)?;
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1091,7 +1163,12 @@ impl PrCommand {
         if !status.success() {
             // Try creating a local tracking branch
             let status = Command::new("git")
-                .args(["checkout", "-b", &source_branch, &format!("origin/{}", source_branch)])
+                .args([
+                    "checkout",
+                    "-b",
+                    &source_branch,
+                    &format!("origin/{}", source_branch),
+                ])
                 .status()?;
 
             if !status.success() {
@@ -1118,8 +1195,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1131,11 +1212,7 @@ impl PrCommand {
                 context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .get(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.get(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1156,11 +1233,7 @@ impl PrCommand {
                 context.host, context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .get(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.get(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1194,8 +1267,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1271,7 +1348,9 @@ impl PrCommand {
             output.write_success(&format!("Merged PR #{}", pr_number));
 
             if args.delete_branch {
-                println!("Note: Delete source branch after merge requires separate action on Server");
+                println!(
+                    "Note: Delete source branch after merge requires separate action on Server"
+                );
             }
         }
 
@@ -1292,8 +1371,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1356,8 +1439,12 @@ impl PrCommand {
 
         let context = resolver.resolve(global)?;
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1403,11 +1490,7 @@ impl PrCommand {
                 context.host, context.owner, context.repo_slug, args.number
             );
 
-            let response = client
-                .post(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.post(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1435,8 +1518,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1454,11 +1541,7 @@ impl PrCommand {
                 context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .post(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.post(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1471,11 +1554,7 @@ impl PrCommand {
                 context.host, context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .post(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.post(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1490,7 +1569,11 @@ impl PrCommand {
     }
 
     /// Request changes on a PR
-    async fn request_changes(&self, args: &RequestChangesArgs, global: &GlobalOptions) -> Result<()> {
+    async fn request_changes(
+        &self,
+        args: &RequestChangesArgs,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         let config = Config::load().unwrap_or_default();
         let resolver = ContextResolver::new(config);
         let keyring = KeyringStore::new();
@@ -1503,8 +1586,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1522,11 +1609,7 @@ impl PrCommand {
                 context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .post(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.post(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1542,7 +1625,8 @@ impl PrCommand {
             // Server uses needs_work status
             // First add comment if provided, then set status
             if let Some(comment_body) = &args.body {
-                self.add_comment(&context, &token, pr_number, comment_body).await?;
+                self.add_comment(&context, &token, pr_number, comment_body)
+                    .await?;
             }
 
             // Note: Server doesn't have a direct request-changes endpoint
@@ -1569,8 +1653,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1588,11 +1676,7 @@ impl PrCommand {
                 context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .delete(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.delete(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1606,11 +1690,7 @@ impl PrCommand {
                 context.host, context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .delete(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.delete(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1638,8 +1718,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let output = OutputWriter::new(if global.json {
             OutputFormat::Json
@@ -1654,9 +1738,22 @@ impl PrCommand {
 
         // Perform review action
         if args.approve {
-            self.approve(&ApproveArgs { number: Some(pr_number) }, global).await?;
+            self.approve(
+                &ApproveArgs {
+                    number: Some(pr_number),
+                },
+                global,
+            )
+            .await?;
         } else if args.request_changes {
-            self.request_changes(&RequestChangesArgs { number: Some(pr_number), body: None }, global).await?;
+            self.request_changes(
+                &RequestChangesArgs {
+                    number: Some(pr_number),
+                    body: None,
+                },
+                global,
+            )
+            .await?;
         } else if args.comment && args.body.is_some() {
             output.write_success(&format!("Commented on PR #{}", pr_number));
         }
@@ -1690,8 +1787,12 @@ impl PrCommand {
                 .ok_or_else(|| anyhow::anyhow!("Comment cannot be empty"))?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         self.add_comment(&context, &token, pr_number, &body).await?;
 
@@ -1719,10 +1820,15 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
-        self.fetch_and_display_comments(&context, &token, pr_number, global).await
+        self.fetch_and_display_comments(&context, &token, pr_number, global)
+            .await
     }
 
     /// Edit a PR
@@ -1739,8 +1845,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1805,7 +1915,8 @@ impl PrCommand {
 
         // Add reviewer if specified
         if let Some(reviewer) = &args.add_reviewer {
-            self.add_reviewer(&context, &token, pr_number, reviewer).await?;
+            self.add_reviewer(&context, &token, pr_number, reviewer)
+                .await?;
         }
 
         output.write_success(&format!("Updated PR #{}", pr_number));
@@ -1854,8 +1965,12 @@ impl PrCommand {
             self.find_pr_for_current_branch(&context, &keyring).await?
         };
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -1867,11 +1982,7 @@ impl PrCommand {
                 context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .get(&url)
-                .bearer_auth(&token)
-                .send()
-                .await?;
+            let response = client.get(&url).bearer_auth(&token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -1904,7 +2015,8 @@ impl PrCommand {
                         "INPROGRESS" => style("●").yellow(),
                         _ => style("?").dim(),
                     };
-                    println!("{} {} - {}",
+                    println!(
+                        "{} {} - {}",
                         state_icon,
                         status.name,
                         status.description.as_deref().unwrap_or("")
@@ -1918,15 +2030,13 @@ impl PrCommand {
                 loop {
                     tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
 
-                    let response = client
-                        .get(&url)
-                        .bearer_auth(&token)
-                        .send()
-                        .await?;
+                    let response = client.get(&url).bearer_auth(&token).send().await?;
 
                     let statuses: StatusResponse = response.json().await?;
 
-                    let all_done = statuses.values.iter()
+                    let all_done = statuses
+                        .values
+                        .iter()
                         .all(|s| s.state == "SUCCESSFUL" || s.state == "FAILED");
 
                     if all_done {
@@ -1939,8 +2049,10 @@ impl PrCommand {
             // Server build status
             println!("Build checks for Server/DC require checking commit statuses.");
             println!("Use the web interface to view build status at:");
-            println!("  https://{}/projects/{}/repos/{}/pull-requests/{}",
-                context.host, context.owner, context.repo_slug, pr_number);
+            println!(
+                "  https://{}/projects/{}/repos/{}/pull-requests/{}",
+                context.host, context.owner, context.repo_slug, pr_number
+            );
         }
 
         Ok(())
@@ -1993,8 +2105,12 @@ impl PrCommand {
     ) -> Result<u32> {
         let current_branch = self.get_current_branch()?;
 
-        let token = keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated for {}. Run 'bb auth login' first.", context.host))?;
+        let token = keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Not authenticated for {}. Run 'bb auth login' first.",
+                context.host
+            )
+        })?;
 
         let client = Client::builder()
             .user_agent(format!("bb/{}", crate::VERSION))
@@ -2032,7 +2148,10 @@ impl PrCommand {
             }
         }
 
-        anyhow::bail!("No open PR found for branch '{}'. Please specify a PR number.", current_branch)
+        anyhow::bail!(
+            "No open PR found for branch '{}'. Please specify a PR number.",
+            current_branch
+        )
     }
 
     /// Print diff statistics
@@ -2051,8 +2170,10 @@ impl PrCommand {
             }
         }
 
-        println!("{} files changed, {} insertions(+), {} deletions(-)",
-            files_changed, insertions, deletions);
+        println!(
+            "{} files changed, {} insertions(+), {} deletions(-)",
+            files_changed, insertions, deletions
+        );
     }
 
     /// Add a comment to a PR
@@ -2157,11 +2278,7 @@ impl PrCommand {
                 context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .get(&url)
-                .bearer_auth(token)
-                .send()
-                .await?;
+            let response = client.get(&url).bearer_auth(token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -2189,12 +2306,16 @@ impl PrCommand {
 
             let comments: CommentResponse = response.json().await?;
 
-            let items: Vec<PrComment> = comments.values.into_iter().map(|c| PrComment {
-                id: c.id,
-                author: c.user.username.unwrap_or_else(|| c.user.name),
-                content: c.content.raw,
-                created_on: c.created_on,
-            }).collect();
+            let items: Vec<PrComment> = comments
+                .values
+                .into_iter()
+                .map(|c| PrComment {
+                    id: c.id,
+                    author: c.user.username.unwrap_or_else(|| c.user.name),
+                    content: c.content.raw,
+                    created_on: c.created_on,
+                })
+                .collect();
 
             if items.is_empty() {
                 println!("No comments on PR #{}", pr_number);
@@ -2207,11 +2328,7 @@ impl PrCommand {
                 context.host, context.owner, context.repo_slug, pr_number
             );
 
-            let response = client
-                .get(&url)
-                .bearer_auth(token)
-                .send()
-                .await?;
+            let response = client.get(&url).bearer_auth(token).send().await?;
 
             if !response.status().is_success() {
                 let status = response.status();
@@ -2242,7 +2359,9 @@ impl PrCommand {
 
             let activities: ActivityResponse = response.json().await?;
 
-            let items: Vec<PrComment> = activities.values.into_iter()
+            let items: Vec<PrComment> = activities
+                .values
+                .into_iter()
                 .filter(|a| a.action == "COMMENTED" && a.comment.is_some())
                 .map(|a| PrComment {
                     id: a.id,
@@ -2294,7 +2413,9 @@ impl PrCommand {
             }
 
             let body = AddReviewer {
-                user: UserRef { name: reviewer.to_string() },
+                user: UserRef {
+                    name: reviewer.to_string(),
+                },
                 role: "REVIEWER".to_string(),
             };
 

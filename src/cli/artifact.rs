@@ -37,8 +37,8 @@ use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 use serde::{Deserialize, Serialize};
 
-use crate::api::BitbucketClient;
 use crate::api::common::PaginatedResponse;
+use crate::api::BitbucketClient;
 use crate::auth::{AuthCredential, KeyringStore};
 use crate::config::Config;
 use crate::context::{ContextResolver, HostType, RepoContext};
@@ -145,10 +145,12 @@ struct ArtifactListItem {
 
 impl crate::output::TableOutput for ArtifactListItem {
     fn print_table(&self, _color: bool) {
-        let size_str = self.size
+        let size_str = self
+            .size
             .map(|s| format_bytes(s))
             .unwrap_or_else(|| "-".to_string());
-        let step_str = self.step
+        let step_str = self
+            .step
             .as_ref()
             .map(|s| truncate(s, 15))
             .unwrap_or_else(|| "-".to_string());
@@ -161,7 +163,13 @@ impl crate::output::TableOutput for ArtifactListItem {
     }
 
     fn print_markdown(&self) {
-        println!("| {} | {} | {} | {} |", self.name, self.pipeline, self.size.unwrap_or(0), self.step.as_deref().unwrap_or("-"));
+        println!(
+            "| {} | {} | {} | {} |",
+            self.name,
+            self.pipeline,
+            self.size.unwrap_or(0),
+            self.step.as_deref().unwrap_or("-")
+        );
     }
 }
 
@@ -188,7 +196,8 @@ impl ArtifactCommand {
         let client = BitbucketClient::cloud()?;
 
         let keyring = KeyringStore::new();
-        let token = keyring.get(&ctx.host)?
+        let token = keyring
+            .get(&ctx.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         Ok(client.with_auth(AuthCredential::OAuth {
@@ -259,7 +268,10 @@ impl ArtifactCommand {
 
         if !global.json {
             println!();
-            println!("{}", style(format!("Artifacts from Pipeline #{}", pipeline_num)).bold());
+            println!(
+                "{}",
+                style(format!("Artifacts from Pipeline #{}", pipeline_num)).bold()
+            );
             println!("{}", "-".repeat(70));
             println!(
                 "{} {} {}",
@@ -270,11 +282,13 @@ impl ArtifactCommand {
             println!("{}", "-".repeat(70));
 
             for item in &items {
-                let size_str = item.size
+                let size_str = item
+                    .size
                     .map(|s| format_bytes(s))
                     .unwrap_or_else(|| "-".to_string());
 
-                let step_str = item.step
+                let step_str = item
+                    .step
                     .as_ref()
                     .map(|s| truncate(s, 15))
                     .unwrap_or_else(|| "-".to_string());
@@ -322,7 +336,8 @@ impl ArtifactCommand {
 
         // Make the download request
         let keyring = KeyringStore::new();
-        let token = keyring.get(&ctx.host)?
+        let token = keyring
+            .get(&ctx.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
 
         let http_client = reqwest::Client::new();

@@ -551,11 +551,15 @@ impl ExtensionManager {
     /// - Requires the extension to have been installed with source tracking
     /// - Pinned versions will be upgraded to the pinned version, not latest
     pub fn upgrade(&self, name: &str) -> Result<()> {
-        let ext = self.find(name)?
+        let ext = self
+            .find(name)?
             .ok_or_else(|| anyhow::anyhow!("Extension not found: {}", name))?;
 
         if ext.source.is_none() {
-            anyhow::bail!("Cannot upgrade extension without source information: {}", name);
+            anyhow::bail!(
+                "Cannot upgrade extension without source information: {}",
+                name
+            );
         }
 
         // TODO: Implement upgrade logic

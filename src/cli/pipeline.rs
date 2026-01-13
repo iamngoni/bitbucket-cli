@@ -23,8 +23,8 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::api::cloud::pipelines::{
-    Pipeline, PipelineStep, PipelineVariable, TriggerPipelineRequest,
-    TriggerSelector, TriggerTarget,
+    Pipeline, PipelineStep, PipelineVariable, TriggerPipelineRequest, TriggerSelector,
+    TriggerTarget,
 };
 use crate::api::common::PaginatedResponse;
 use crate::auth::KeyringStore;
@@ -295,7 +295,8 @@ impl TableOutput for PipelineListItem {
             }
         };
 
-        let duration = self.duration_seconds
+        let duration = self
+            .duration_seconds
             .map(|d| format_duration(d))
             .unwrap_or_else(|| "-".to_string());
 
@@ -310,12 +311,15 @@ impl TableOutput for PipelineListItem {
     }
 
     fn print_markdown(&self) {
-        println!("| #{} | {} | {} | {} | {} |",
+        println!(
+            "| #{} | {} | {} | {} | {} |",
             self.build_number,
             self.result.as_ref().unwrap_or(&self.state),
             self.branch,
             format_timestamp(&self.created_on),
-            self.duration_seconds.map(format_duration).unwrap_or_else(|| "-".to_string())
+            self.duration_seconds
+                .map(format_duration)
+                .unwrap_or_else(|| "-".to_string())
         );
     }
 }
@@ -336,16 +340,27 @@ impl TableOutput for PipelineCache {
         println!(
             "{:30} {:15} {}",
             self.name,
-            self.file_size_bytes.map(format_bytes).unwrap_or_else(|| "-".to_string()),
-            self.created_on.as_ref().map(|c| format_timestamp(c)).unwrap_or_else(|| "-".to_string())
+            self.file_size_bytes
+                .map(format_bytes)
+                .unwrap_or_else(|| "-".to_string()),
+            self.created_on
+                .as_ref()
+                .map(|c| format_timestamp(c))
+                .unwrap_or_else(|| "-".to_string())
         );
     }
 
     fn print_markdown(&self) {
-        println!("| {} | {} | {} |",
+        println!(
+            "| {} | {} | {} |",
             self.name,
-            self.file_size_bytes.map(format_bytes).unwrap_or_else(|| "-".to_string()),
-            self.created_on.as_ref().map(|c| format_timestamp(c)).unwrap_or_else(|| "-".to_string())
+            self.file_size_bytes
+                .map(format_bytes)
+                .unwrap_or_else(|| "-".to_string()),
+            self.created_on
+                .as_ref()
+                .map(|c| format_timestamp(c))
+                .unwrap_or_else(|| "-".to_string())
         );
     }
 }
@@ -380,12 +395,23 @@ struct ScheduleSelector {
 impl TableOutput for PipelineSchedule {
     fn print_table(&self, color: bool) {
         let enabled = if self.enabled {
-            if color { style("Yes").green().to_string() } else { "Yes".to_string() }
+            if color {
+                style("Yes").green().to_string()
+            } else {
+                "Yes".to_string()
+            }
         } else {
-            if color { style("No").dim().to_string() } else { "No".to_string() }
+            if color {
+                style("No").dim().to_string()
+            } else {
+                "No".to_string()
+            }
         };
 
-        let pipeline = self.target.selector.as_ref()
+        let pipeline = self
+            .target
+            .selector
+            .as_ref()
             .and_then(|s| s.pattern.clone())
             .unwrap_or_else(|| "default".to_string());
 
@@ -400,11 +426,15 @@ impl TableOutput for PipelineSchedule {
     }
 
     fn print_markdown(&self) {
-        let pipeline = self.target.selector.as_ref()
+        let pipeline = self
+            .target
+            .selector
+            .as_ref()
             .and_then(|s| s.pattern.clone())
             .unwrap_or_else(|| "default".to_string());
 
-        println!("| {} | {} | {} | {} | {} |",
+        println!(
+            "| {} | {} | {} | {} | {} |",
             truncate_uuid(&self.uuid),
             if self.enabled { "Yes" } else { "No" },
             self.cron_pattern,
@@ -432,7 +462,9 @@ struct RunnerState {
 
 impl TableOutput for PipelineRunner {
     fn print_table(&self, color: bool) {
-        let status = self.state.as_ref()
+        let status = self
+            .state
+            .as_ref()
             .map(|s| s.status.clone())
             .unwrap_or_else(|| "UNKNOWN".to_string());
 
@@ -456,11 +488,14 @@ impl TableOutput for PipelineRunner {
     }
 
     fn print_markdown(&self) {
-        let status = self.state.as_ref()
+        let status = self
+            .state
+            .as_ref()
             .map(|s| s.status.clone())
             .unwrap_or_else(|| "UNKNOWN".to_string());
 
-        println!("| {} | {} | {} | {} |",
+        println!(
+            "| {} | {} | {} | {} |",
             truncate_uuid(&self.uuid),
             self.name,
             status,
@@ -521,7 +556,9 @@ impl PipelineCommand {
             PipelineSubcommand::Disable => self.disable(global).await,
             PipelineSubcommand::Config(args) => self.config(args, global).await,
             PipelineSubcommand::Cache(cache) => self.cache(&cache.command, global).await,
-            PipelineSubcommand::Schedule(schedule) => self.schedule(&schedule.command, global).await,
+            PipelineSubcommand::Schedule(schedule) => {
+                self.schedule(&schedule.command, global).await
+            }
             PipelineSubcommand::Runner(runner) => self.runner(&runner.command, global).await,
         }
     }
@@ -554,11 +591,12 @@ impl PipelineCommand {
     /// Get authentication token for Cloud
     fn get_token(&self, context: &RepoContext) -> Result<String> {
         let keyring = KeyringStore::new();
-        keyring.get(&context.host)?
-            .ok_or_else(|| anyhow::anyhow!(
+        keyring.get(&context.host)?.ok_or_else(|| {
+            anyhow::anyhow!(
                 "Not authenticated for {}. Run 'bb auth login' first.",
                 context.host
-            ))
+            )
+        })
     }
 
     /// Create HTTP client
@@ -594,11 +632,15 @@ impl PipelineCommand {
             anyhow::bail!("API error ({}): {}", status, body);
         }
 
-        let paginated: PaginatedResponse<Pipeline> = response.json().await
+        let paginated: PaginatedResponse<Pipeline> = response
+            .json()
+            .await
             .context("Failed to parse pipelines response")?;
 
         // Filter results
-        let items: Vec<PipelineListItem> = paginated.values.into_iter()
+        let items: Vec<PipelineListItem> = paginated
+            .values
+            .into_iter()
             .filter(|p| {
                 // Filter by branch
                 if let Some(ref branch) = args.branch {
@@ -613,13 +655,22 @@ impl PipelineCommand {
                     let matches = match status.as_str() {
                         "pending" => p.state.state_type == "pipeline_state_pending",
                         "in_progress" => p.state.state_type == "pipeline_state_in_progress",
-                        "successful" => p.state.result.as_ref()
+                        "successful" => p
+                            .state
+                            .result
+                            .as_ref()
                             .map(|r| r.result_type == "pipeline_state_completed_successful")
                             .unwrap_or(false),
-                        "failed" => p.state.result.as_ref()
+                        "failed" => p
+                            .state
+                            .result
+                            .as_ref()
                             .map(|r| r.result_type == "pipeline_state_completed_failed")
                             .unwrap_or(false),
-                        "stopped" => p.state.result.as_ref()
+                        "stopped" => p
+                            .state
+                            .result
+                            .as_ref()
                             .map(|r| r.result_type == "pipeline_state_completed_stopped")
                             .unwrap_or(false),
                         _ => true,
@@ -650,8 +701,10 @@ impl PipelineCommand {
         let writer = OutputWriter::new(format);
 
         if !global.json {
-            println!("{:<7} {:20} {:20} {:15} {}",
-                "#", "STATUS", "BRANCH", "CREATED", "DURATION");
+            println!(
+                "{:<7} {:20} {:20} {:15} {}",
+                "#", "STATUS", "BRANCH", "CREATED", "DURATION"
+            );
             println!("{}", "-".repeat(80));
         }
 
@@ -680,7 +733,8 @@ impl PipelineCommand {
         // Fetch pipeline details
         let pipeline_url = format!(
             "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}",
-            context.owner, context.repo_slug,
+            context.owner,
+            context.repo_slug,
             format_pipeline_id(&args.id)
         );
 
@@ -697,20 +751,31 @@ impl PipelineCommand {
             anyhow::bail!("API error ({}): {}", status, body);
         }
 
-        let pipeline: Pipeline = response.json().await
+        let pipeline: Pipeline = response
+            .json()
+            .await
             .context("Failed to parse pipeline response")?;
 
         // Fetch steps
         let steps_url = format!(
             "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}/steps/",
-            context.owner, context.repo_slug,
+            context.owner,
+            context.repo_slug,
             format_pipeline_id(&args.id)
         );
 
-        let steps: Vec<PipelineStep> = match client.get(&steps_url).bearer_auth(&token).send().await {
+        let steps: Vec<PipelineStep> = match client.get(&steps_url).bearer_auth(&token).send().await
+        {
             Ok(resp) if resp.status().is_success() => {
-                let paginated: PaginatedResponse<PipelineStep> = resp.json().await
-                    .unwrap_or_else(|_| PaginatedResponse { values: vec![], next: None, previous: None, size: None, page: None, pagelen: None });
+                let paginated: PaginatedResponse<PipelineStep> =
+                    resp.json().await.unwrap_or_else(|_| PaginatedResponse {
+                        values: vec![],
+                        next: None,
+                        previous: None,
+                        size: None,
+                        page: None,
+                        pagelen: None,
+                    });
                 paginated.values
             }
             _ => vec![],
@@ -750,7 +815,14 @@ impl PipelineCommand {
 
             println!("Pipeline #{}", pipeline.build_number);
             println!("Status:     {}", status);
-            println!("Branch:     {}", pipeline.target.ref_name.clone().unwrap_or_else(|| "-".to_string()));
+            println!(
+                "Branch:     {}",
+                pipeline
+                    .target
+                    .ref_name
+                    .clone()
+                    .unwrap_or_else(|| "-".to_string())
+            );
             println!("Created:    {}", format_timestamp(&pipeline.created_on));
 
             if let Some(ref completed) = pipeline.completed_on {
@@ -775,15 +847,18 @@ impl PipelineCommand {
                     format!("[{}]", step.state.name)
                 };
 
-                let duration_str = step.duration_in_seconds
+                let duration_str = step
+                    .duration_in_seconds
                     .map(|d| format!(" ({})", format_duration(d)))
                     .unwrap_or_default();
 
                 println!("  {} - {}{}", step.name, step_status, duration_str);
             }
 
-            println!("\nView in browser: https://bitbucket.org/{}/{}/pipelines/results/{}",
-                context.owner, context.repo_slug, pipeline.build_number);
+            println!(
+                "\nView in browser: https://bitbucket.org/{}/{}/pipelines/results/{}",
+                context.owner, context.repo_slug, pipeline.build_number
+            );
         }
 
         Ok(())
@@ -803,7 +878,9 @@ impl PipelineCommand {
         };
 
         // Parse variables
-        let variables: Vec<PipelineVariable> = args.variable.iter()
+        let variables: Vec<PipelineVariable> = args
+            .variable
+            .iter()
             .filter_map(|v| {
                 let parts: Vec<&str> = v.splitn(2, '=').collect();
                 if parts.len() == 2 {
@@ -853,7 +930,9 @@ impl PipelineCommand {
             anyhow::bail!("API error ({}): {}", status, body);
         }
 
-        let pipeline: Pipeline = response.json().await
+        let pipeline: Pipeline = response
+            .json()
+            .await
             .context("Failed to parse pipeline response")?;
 
         if global.json {
@@ -864,14 +943,20 @@ impl PipelineCommand {
             });
             println!("{}", serde_json::to_string_pretty(&output)?);
         } else {
-            println!("Triggered pipeline #{} on branch '{}'", pipeline.build_number, branch);
-            println!("View at: https://bitbucket.org/{}/{}/pipelines/results/{}",
-                context.owner, context.repo_slug, pipeline.build_number);
+            println!(
+                "Triggered pipeline #{} on branch '{}'",
+                pipeline.build_number, branch
+            );
+            println!(
+                "View at: https://bitbucket.org/{}/{}/pipelines/results/{}",
+                context.owner, context.repo_slug, pipeline.build_number
+            );
 
             // Watch if requested
             if args.watch {
                 println!("\nWatching pipeline progress...\n");
-                self.watch_pipeline(&context, &token, &pipeline.uuid, 3, false).await?;
+                self.watch_pipeline(&context, &token, &pipeline.uuid, 3, false)
+                    .await?;
             }
         }
 
@@ -886,7 +971,8 @@ impl PipelineCommand {
 
         let url = format!(
             "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}/stopPipeline",
-            context.owner, context.repo_slug,
+            context.owner,
+            context.repo_slug,
             format_pipeline_id(&args.id)
         );
 
@@ -921,7 +1007,8 @@ impl PipelineCommand {
         // First, get the original pipeline to extract its target
         let pipeline_url = format!(
             "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}",
-            context.owner, context.repo_slug,
+            context.owner,
+            context.repo_slug,
             format_pipeline_id(&args.id)
         );
 
@@ -938,12 +1025,16 @@ impl PipelineCommand {
             anyhow::bail!("API error ({}): {}", status, body);
         }
 
-        let pipeline: Pipeline = response.json().await
+        let pipeline: Pipeline = response
+            .json()
+            .await
             .context("Failed to parse pipeline response")?;
 
         // Trigger a new pipeline with the same target
-        let ref_name = pipeline.target.ref_name.clone()
-            .ok_or_else(|| anyhow::anyhow!("Could not determine branch from original pipeline"))?;
+        let ref_name =
+            pipeline.target.ref_name.clone().ok_or_else(|| {
+                anyhow::anyhow!("Could not determine branch from original pipeline")
+            })?;
 
         let selector = pipeline.target.selector.as_ref().map(|s| TriggerSelector {
             selector_type: s.selector_type.clone(),
@@ -953,7 +1044,11 @@ impl PipelineCommand {
         let request = TriggerPipelineRequest {
             target: TriggerTarget {
                 target_type: "pipeline_ref_target".to_string(),
-                ref_type: pipeline.target.ref_type.clone().unwrap_or_else(|| "branch".to_string()),
+                ref_type: pipeline
+                    .target
+                    .ref_type
+                    .clone()
+                    .unwrap_or_else(|| "branch".to_string()),
                 ref_name,
                 selector,
             },
@@ -979,7 +1074,9 @@ impl PipelineCommand {
             anyhow::bail!("API error ({}): {}", status, body);
         }
 
-        let new_pipeline: Pipeline = response.json().await
+        let new_pipeline: Pipeline = response
+            .json()
+            .await
             .context("Failed to parse pipeline response")?;
 
         if global.json {
@@ -990,9 +1087,14 @@ impl PipelineCommand {
             });
             println!("{}", serde_json::to_string_pretty(&output)?);
         } else {
-            println!("Rerunning pipeline {} as #{}", args.id, new_pipeline.build_number);
-            println!("View at: https://bitbucket.org/{}/{}/pipelines/results/{}",
-                context.owner, context.repo_slug, new_pipeline.build_number);
+            println!(
+                "Rerunning pipeline {} as #{}",
+                args.id, new_pipeline.build_number
+            );
+            println!(
+                "View at: https://bitbucket.org/{}/{}/pipelines/results/{}",
+                context.owner, context.repo_slug, new_pipeline.build_number
+            );
         }
 
         Ok(())
@@ -1007,7 +1109,8 @@ impl PipelineCommand {
         // First, get the steps
         let steps_url = format!(
             "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}/steps/",
-            context.owner, context.repo_slug,
+            context.owner,
+            context.repo_slug,
             format_pipeline_id(&args.id)
         );
 
@@ -1024,10 +1127,14 @@ impl PipelineCommand {
             anyhow::bail!("API error ({}): {}", status, body);
         }
 
-        let paginated: PaginatedResponse<PipelineStep> = response.json().await
+        let paginated: PaginatedResponse<PipelineStep> = response
+            .json()
+            .await
             .context("Failed to parse steps response")?;
 
-        let steps: Vec<PipelineStep> = paginated.values.into_iter()
+        let steps: Vec<PipelineStep> = paginated
+            .values
+            .into_iter()
             .filter(|s| {
                 // Filter by step name if specified
                 if let Some(ref step_name) = args.step {
@@ -1035,7 +1142,10 @@ impl PipelineCommand {
                 }
                 // Filter by failed if requested
                 if args.failed {
-                    return s.state.result.as_ref()
+                    return s
+                        .state
+                        .result
+                        .as_ref()
                         .map(|r| r.result_type == "pipeline_state_completed_failed")
                         .unwrap_or(false);
                 }
@@ -1052,7 +1162,8 @@ impl PipelineCommand {
         for step in &steps {
             let log_url = format!(
                 "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}/steps/{}/log",
-                context.owner, context.repo_slug,
+                context.owner,
+                context.repo_slug,
                 format_pipeline_id(&args.id),
                 step.uuid.trim_matches(|c| c == '{' || c == '}')
             );
@@ -1063,7 +1174,10 @@ impl PipelineCommand {
 
             match client.get(&log_url).bearer_auth(&token).send().await {
                 Ok(resp) if resp.status().is_success() => {
-                    let log_text = resp.text().await.unwrap_or_else(|_| "(no logs)".to_string());
+                    let log_text = resp
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "(no logs)".to_string());
                     if global.json {
                         let output = serde_json::json!({
                             "step": step.name,
@@ -1095,7 +1209,8 @@ impl PipelineCommand {
         let context = self.get_cloud_context(global)?;
         let token = self.get_token(&context)?;
 
-        self.watch_pipeline(&context, &token, &args.id, args.interval, args.exit_status).await
+        self.watch_pipeline(&context, &token, &args.id, args.interval, args.exit_status)
+            .await
     }
 
     /// Internal watch implementation
@@ -1115,7 +1230,8 @@ impl PipelineCommand {
 
             let pipeline_url = format!(
                 "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}",
-                context.owner, context.repo_slug,
+                context.owner,
+                context.repo_slug,
                 format_pipeline_id(id)
             );
 
@@ -1132,24 +1248,35 @@ impl PipelineCommand {
                 anyhow::bail!("API error ({}): {}", status, body);
             }
 
-            let pipeline: Pipeline = response.json().await
+            let pipeline: Pipeline = response
+                .json()
+                .await
                 .context("Failed to parse pipeline response")?;
 
             // Fetch steps
             let steps_url = format!(
                 "https://api.bitbucket.org/2.0/repositories/{}/{}/pipelines/{}/steps/",
-                context.owner, context.repo_slug,
+                context.owner,
+                context.repo_slug,
                 format_pipeline_id(id)
             );
 
-            let steps: Vec<PipelineStep> = match client.get(&steps_url).bearer_auth(token).send().await {
-                Ok(resp) if resp.status().is_success() => {
-                    let paginated: PaginatedResponse<PipelineStep> = resp.json().await
-                        .unwrap_or_else(|_| PaginatedResponse { values: vec![], next: None, previous: None, size: None, page: None, pagelen: None });
-                    paginated.values
-                }
-                _ => vec![],
-            };
+            let steps: Vec<PipelineStep> =
+                match client.get(&steps_url).bearer_auth(token).send().await {
+                    Ok(resp) if resp.status().is_success() => {
+                        let paginated: PaginatedResponse<PipelineStep> =
+                            resp.json().await.unwrap_or_else(|_| PaginatedResponse {
+                                values: vec![],
+                                next: None,
+                                previous: None,
+                                size: None,
+                                page: None,
+                                pagelen: None,
+                            });
+                        paginated.values
+                    }
+                    _ => vec![],
+                };
 
             // Display status
             let status = if let Some(ref result) = pipeline.state.result {
@@ -1159,7 +1286,14 @@ impl PipelineCommand {
             };
 
             println!("Pipeline #{} - {}", pipeline.build_number, status);
-            println!("Branch: {}", pipeline.target.ref_name.clone().unwrap_or_else(|| "-".to_string()));
+            println!(
+                "Branch: {}",
+                pipeline
+                    .target
+                    .ref_name
+                    .clone()
+                    .unwrap_or_else(|| "-".to_string())
+            );
             println!();
 
             for step in &steps {
@@ -1177,7 +1311,8 @@ impl PipelineCommand {
                     _ => style("[?]").dim(),
                 };
 
-                let duration = step.duration_in_seconds
+                let duration = step
+                    .duration_in_seconds
                     .map(|d| format!(" ({})", format_duration(d)))
                     .unwrap_or_default();
 
@@ -1193,7 +1328,10 @@ impl PipelineCommand {
                 }
 
                 if exit_status {
-                    let success = pipeline.state.result.as_ref()
+                    let success = pipeline
+                        .state
+                        .result
+                        .as_ref()
                         .map(|r| r.result_type == "pipeline_state_completed_successful")
                         .unwrap_or(false);
                     if !success {
@@ -1239,7 +1377,10 @@ impl PipelineCommand {
         if global.json {
             println!(r#"{{"enabled": true}}"#);
         } else {
-            println!("Pipelines have been enabled for {}/{}", context.owner, context.repo_slug);
+            println!(
+                "Pipelines have been enabled for {}/{}",
+                context.owner, context.repo_slug
+            );
             println!("\nNext steps:");
             println!("  1. Add a bitbucket-pipelines.yml file to your repository");
             println!("  2. Push changes to trigger your first pipeline");
@@ -1276,7 +1417,10 @@ impl PipelineCommand {
         if global.json {
             println!(r#"{{"enabled": false}}"#);
         } else {
-            println!("Pipelines have been disabled for {}/{}", context.owner, context.repo_slug);
+            println!(
+                "Pipelines have been disabled for {}/{}",
+                context.owner, context.repo_slug
+            );
         }
 
         Ok(())
@@ -1295,7 +1439,8 @@ impl PipelineCommand {
 
             // Basic check - try to detect common YAML issues
             // We just check for valid structure, not Bitbucket-specific schema
-            let has_image_or_pipelines = content.contains("image:") || content.contains("pipelines:");
+            let has_image_or_pipelines =
+                content.contains("image:") || content.contains("pipelines:");
             let balanced_quotes = content.matches('"').count() % 2 == 0;
             let balanced_single_quotes = content.matches('\'').count() % 2 == 0;
 
@@ -1346,7 +1491,9 @@ impl PipelineCommand {
                 .context("Failed to fetch pipelines config")?;
 
             let enabled = if response.status().is_success() {
-                let config: RepositoryPipelinesConfig = response.json().await
+                let config: RepositoryPipelinesConfig = response
+                    .json()
+                    .await
                     .context("Failed to parse config response")?;
                 config.enabled
             } else {
@@ -1362,7 +1509,10 @@ impl PipelineCommand {
                 });
                 println!("{}", serde_json::to_string_pretty(&output)?);
             } else {
-                println!("Pipelines configuration for {}/{}:", context.owner, context.repo_slug);
+                println!(
+                    "Pipelines configuration for {}/{}:",
+                    context.owner, context.repo_slug
+                );
                 println!("  Enabled: {}", if enabled { "Yes" } else { "No" });
 
                 if local_exists {
@@ -1405,7 +1555,9 @@ impl PipelineCommand {
                     anyhow::bail!("API error ({}): {}", status, body);
                 }
 
-                let paginated: PaginatedResponse<PipelineCache> = response.json().await
+                let paginated: PaginatedResponse<PipelineCache> = response
+                    .json()
+                    .await
                     .context("Failed to parse caches response")?;
 
                 if paginated.values.is_empty() {
@@ -1470,7 +1622,9 @@ impl PipelineCommand {
                     anyhow::bail!("API error ({}): {}", status, body);
                 }
 
-                let paginated: PaginatedResponse<PipelineCache> = response.json().await
+                let paginated: PaginatedResponse<PipelineCache> = response
+                    .json()
+                    .await
                     .context("Failed to parse caches response")?;
 
                 if paginated.values.is_empty() {
@@ -1533,7 +1687,9 @@ impl PipelineCommand {
                     anyhow::bail!("API error ({}): {}", status, body);
                 }
 
-                let paginated: PaginatedResponse<PipelineSchedule> = response.json().await
+                let paginated: PaginatedResponse<PipelineSchedule> = response
+                    .json()
+                    .await
                     .context("Failed to parse schedules response")?;
 
                 if paginated.values.is_empty() {
@@ -1545,7 +1701,10 @@ impl PipelineCommand {
                 let writer = OutputWriter::new(format);
 
                 if !global.json {
-                    println!("{:12} {:8} {:20} {:20} {}", "ID", "ENABLED", "CRON", "BRANCH", "PIPELINE");
+                    println!(
+                        "{:12} {:8} {:20} {:20} {}",
+                        "ID", "ENABLED", "CRON", "BRANCH", "PIPELINE"
+                    );
                     println!("{}", "-".repeat(80));
                 }
 
@@ -1589,7 +1748,9 @@ impl PipelineCommand {
                     anyhow::bail!("API error ({}): {}", status, body);
                 }
 
-                let schedule: PipelineSchedule = response.json().await
+                let schedule: PipelineSchedule = response
+                    .json()
+                    .await
                     .context("Failed to parse schedule response")?;
 
                 if global.json {
@@ -1715,7 +1876,9 @@ impl PipelineCommand {
                     anyhow::bail!("API error ({}): {}", status, body);
                 }
 
-                let paginated: PaginatedResponse<PipelineRunner> = response.json().await
+                let paginated: PaginatedResponse<PipelineRunner> = response
+                    .json()
+                    .await
                     .context("Failed to parse runners response")?;
 
                 if paginated.values.is_empty() {

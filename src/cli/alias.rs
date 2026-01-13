@@ -135,9 +135,26 @@ impl AliasCommand {
 
         // Reserved commands that can't be aliased
         let reserved = [
-            "auth", "repo", "pr", "issue", "pipeline", "workspace", "project",
-            "browse", "api", "config", "alias", "extension", "webhook", "deploy",
-            "artifact", "secret", "ssh-key", "completion", "version", "help",
+            "auth",
+            "repo",
+            "pr",
+            "issue",
+            "pipeline",
+            "workspace",
+            "project",
+            "browse",
+            "api",
+            "config",
+            "alias",
+            "extension",
+            "webhook",
+            "deploy",
+            "artifact",
+            "secret",
+            "ssh-key",
+            "completion",
+            "version",
+            "help",
         ];
 
         if reserved.contains(&args.alias.as_str()) {
@@ -268,11 +285,7 @@ impl AliasCommand {
 
         for (alias, expansion) in aliases {
             let is_shell = expansion.starts_with('!');
-            let display_expansion = if is_shell {
-                &expansion[1..]
-            } else {
-                expansion
-            };
+            let display_expansion = if is_shell { &expansion[1..] } else { expansion };
 
             if is_shell {
                 println!(
@@ -388,7 +401,10 @@ impl AliasCommand {
             "json" => serde_json::to_string_pretty(&file)?,
             "toml" => toml::to_string_pretty(&file)?,
             "yaml" | "yml" => serde_yaml::to_string(&file)?,
-            _ => bail!("Unsupported format: {}. Use json, yaml, or toml", args.format),
+            _ => bail!(
+                "Unsupported format: {}. Use json, yaml, or toml",
+                args.format
+            ),
         };
 
         fs::write(&args.file, &content)?;

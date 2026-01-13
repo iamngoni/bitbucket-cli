@@ -23,13 +23,7 @@ use crate::config::Config;
 use super::GlobalOptions;
 
 /// Valid core configuration keys
-const VALID_CORE_KEYS: &[&str] = &[
-    "editor",
-    "pager",
-    "browser",
-    "git_protocol",
-    "prompt",
-];
+const VALID_CORE_KEYS: &[&str] = &["editor", "pager", "browser", "git_protocol", "prompt"];
 
 /// Valid host configuration keys
 const VALID_HOST_KEYS: &[&str] = &[
@@ -247,11 +241,7 @@ impl ConfigCommand {
             });
             println!("{}", serde_json::to_string_pretty(&result)?);
         } else {
-            println!(
-                "{} Unset {}",
-                style("✓").green(),
-                style(&args.key).cyan()
-            );
+            println!("{} Unset {}", style("✓").green(), style(&args.key).cyan());
         }
 
         Ok(())
@@ -294,7 +284,10 @@ impl ConfigCommand {
         if let Some(host) = &args.host {
             // List host-specific config
             println!();
-            println!("{}", style(format!("Configuration for host: {}", host)).bold());
+            println!(
+                "{}",
+                style(format!("Configuration for host: {}", host)).bold()
+            );
             println!("{}", "-".repeat(50));
 
             if let Some(host_config) = config.hosts.get(host) {
@@ -363,7 +356,9 @@ impl ConfigCommand {
         }
 
         // Determine editor
-        let editor = config.core.editor
+        let editor = config
+            .core
+            .editor
             .or_else(|| std::env::var("EDITOR").ok())
             .or_else(|| std::env::var("VISUAL").ok())
             .unwrap_or_else(|| {
@@ -394,7 +389,8 @@ impl ConfigCommand {
 
         // Parse editor command (handle "code --wait" style editors)
         let parts: Vec<&str> = editor.split_whitespace().collect();
-        let (cmd, cmd_args) = parts.split_first()
+        let (cmd, cmd_args) = parts
+            .split_first()
             .ok_or_else(|| anyhow::anyhow!("Invalid editor command"))?;
 
         let status = Command::new(cmd)
@@ -449,7 +445,13 @@ impl ConfigCommand {
         })
     }
 
-    fn set_host_value(&self, config: &mut Config, host: &str, key: &str, value: &str) -> Result<()> {
+    fn set_host_value(
+        &self,
+        config: &mut Config,
+        host: &str,
+        key: &str,
+        value: &str,
+    ) -> Result<()> {
         if !VALID_HOST_KEYS.contains(&key) {
             bail!(
                 "Unknown host configuration key '{}'. Valid keys: {}",

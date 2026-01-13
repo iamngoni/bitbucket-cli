@@ -228,7 +228,10 @@ impl RepoContext {
                 format!("https://bitbucket.org/{}/{}", self.owner, self.repo_slug)
             }
             HostType::Server => {
-                format!("https://{}/projects/{}/repos/{}", self.host, self.owner, self.repo_slug)
+                format!(
+                    "https://{}/projects/{}/repos/{}",
+                    self.host, self.owner, self.repo_slug
+                )
             }
         }
     }
@@ -282,10 +285,16 @@ impl RepoContext {
     pub fn api_url(&self) -> String {
         match self.host_type {
             HostType::Cloud => {
-                format!("https://api.bitbucket.org/2.0/repositories/{}/{}", self.owner, self.repo_slug)
+                format!(
+                    "https://api.bitbucket.org/2.0/repositories/{}/{}",
+                    self.owner, self.repo_slug
+                )
             }
             HostType::Server => {
-                format!("https://{}/rest/api/1.0/projects/{}/repos/{}", self.host, self.owner, self.repo_slug)
+                format!(
+                    "https://{}/rest/api/1.0/projects/{}/repos/{}",
+                    self.host, self.owner, self.repo_slug
+                )
             }
         }
     }

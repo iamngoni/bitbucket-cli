@@ -310,7 +310,10 @@ impl PkceChallenge {
         hasher.update(verifier.as_bytes());
         let challenge = URL_SAFE_NO_PAD.encode(hasher.finalize());
 
-        Self { verifier, challenge }
+        Self {
+            verifier,
+            challenge,
+        }
     }
 }
 
@@ -375,13 +378,13 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
     let pkce = PkceChallenge::new();
 
     // Parse redirect URI to extract port
-    let redirect_url = Url::parse(&config.redirect_uri)
-        .context("Invalid redirect URI")?;
+    let redirect_url = Url::parse(&config.redirect_uri).context("Invalid redirect URI")?;
     let port = redirect_url.port().unwrap_or(8085);
 
     // Build authorization URL
     let mut auth_url = Url::parse(AUTHORIZE_URL)?;
-    auth_url.query_pairs_mut()
+    auth_url
+        .query_pairs_mut()
         .append_pair("client_id", &config.client_id)
         .append_pair("response_type", "code")
         .append_pair("redirect_uri", &config.redirect_uri)
@@ -389,7 +392,8 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
         .append_pair("code_challenge_method", "S256");
 
     if !config.scopes.is_empty() {
-        auth_url.query_pairs_mut()
+        auth_url
+            .query_pairs_mut()
             .append_pair("scope", &config.scopes.join(" "));
     }
 
@@ -397,8 +401,10 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
     let (tx, rx) = mpsc::channel::<String>();
 
     // Start local server in a background thread
-    let listener = TcpListener::bind(format!("127.0.0.1:{}", port))
-        .context(format!("Failed to bind to port {}. Is another process using it?", port))?;
+    let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).context(format!(
+        "Failed to bind to port {}. Is another process using it?",
+        port
+    ))?;
     listener.set_nonblocking(false)?;
 
     // Spawn thread to handle the callback

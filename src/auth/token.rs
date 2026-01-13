@@ -359,11 +359,7 @@ impl PersonalAccessToken {
         // Get current user from the REST API
         // Bitbucket Server uses /plugins/servlet/applinks/whoami or /rest/api/1.0/users endpoint
         let url = format!("{}/plugins/servlet/applinks/whoami", self.host);
-        let response = client
-            .get(&url)
-            .bearer_auth(&self.token)
-            .send()
-            .await;
+        let response = client.get(&url).bearer_auth(&self.token).send().await;
 
         match response {
             Ok(resp) if resp.status().is_success() => {

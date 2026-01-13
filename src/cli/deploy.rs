@@ -32,8 +32,8 @@ use clap::{Args, Subcommand};
 use console::style;
 use serde::{Deserialize, Serialize};
 
-use crate::api::BitbucketClient;
 use crate::api::common::PaginatedResponse;
+use crate::api::BitbucketClient;
 use crate::auth::{AuthCredential, KeyringStore};
 use crate::config::Config;
 use crate::context::{ContextResolver, HostType, RepoContext};
@@ -282,7 +282,13 @@ impl TableOutput for DeploymentListItem {
     }
 
     fn print_markdown(&self) {
-        println!("| {} | {} | {} | {} |", self.uuid, self.environment, self.state, self.release.as_deref().unwrap_or("-"));
+        println!(
+            "| {} | {} | {} | {} |",
+            self.uuid,
+            self.environment,
+            self.state,
+            self.release.as_deref().unwrap_or("-")
+        );
     }
 }
 
@@ -310,7 +316,8 @@ impl DeployCommand {
         let client = BitbucketClient::cloud()?;
 
         let keyring = KeyringStore::new();
-        let token = keyring.get(&ctx.host)?
+        let token = keyring
+            .get(&ctx.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         Ok(client.with_auth(AuthCredential::OAuth {
@@ -348,18 +355,19 @@ impl DeployCommand {
             .values
             .into_iter()
             .filter(|d| {
-                args.status.as_ref().map_or(true, |s| {
-                    d.state.name.to_lowercase() == s.to_lowercase()
-                })
+                args.status
+                    .as_ref()
+                    .map_or(true, |s| d.state.name.to_lowercase() == s.to_lowercase())
             })
             .map(|d| DeploymentListItem {
                 uuid: d.uuid,
                 environment: d.environment.name,
                 state: d.state.name,
                 release: d.release.as_ref().and_then(|r| r.name.clone()),
-                commit: d.release.as_ref().and_then(|r| {
-                    r.commit.as_ref().map(|c| c.hash[..8].to_string())
-                }),
+                commit: d
+                    .release
+                    .as_ref()
+                    .and_then(|r| r.commit.as_ref().map(|c| c.hash[..8].to_string())),
                 started_on: d.state.started_on,
             })
             .collect();
@@ -401,7 +409,8 @@ impl DeployCommand {
                     state_styled,
                     item.release.as_deref().unwrap_or("-"),
                     item.commit.as_deref().unwrap_or("-"),
-                    item.started_on.as_deref()
+                    item.started_on
+                        .as_deref()
                         .map(|s| &s[..std::cmp::min(19, s.len())])
                         .unwrap_or("-")
                 );
@@ -434,9 +443,10 @@ impl DeployCommand {
             environment_type: d.environment.environment_type.map(|t| t.name),
             state: d.state.name,
             release: d.release.as_ref().and_then(|r| r.name.clone()),
-            commit: d.release.as_ref().and_then(|r| {
-                r.commit.as_ref().map(|c| c.hash.clone())
-            }),
+            commit: d
+                .release
+                .as_ref()
+                .and_then(|r| r.commit.as_ref().map(|c| c.hash.clone())),
             started_on: d.state.started_on,
             completed_on: d.state.completed_on,
         };
@@ -461,10 +471,7 @@ impl DeployCommand {
         let current: Deployment = client.get(&get_url).await?;
 
         // Find target environment UUID
-        let envs_url = format!(
-            "/repositories/{}/{}/environments",
-            ctx.owner, ctx.repo_slug
-        );
+        let envs_url = format!("/repositories/{}/{}/environments", ctx.owner, ctx.repo_slug);
 
         let envs: PaginatedResponse<Environment> = client.get(&envs_url).await?;
 
@@ -475,10 +482,7 @@ impl DeployCommand {
             .ok_or_else(|| anyhow::anyhow!("Environment '{}' not found", args.environment))?;
 
         // Create promotion - this creates a new deployment pointing to the same release
-        let url = format!(
-            "/repositories/{}/{}/deployments",
-            ctx.owner, ctx.repo_slug
-        );
+        let url = format!("/repositories/{}/{}/deployments", ctx.owner, ctx.repo_slug);
 
         let body = serde_json::json!({
             "environment": {
@@ -529,10 +533,7 @@ impl DeployCommand {
         let ctx = self.resolve_context(global)?;
         let client = self.get_client(&ctx)?;
 
-        let url = format!(
-            "/repositories/{}/{}/environments",
-            ctx.owner, ctx.repo_slug
-        );
+        let url = format!("/repositories/{}/{}/environments", ctx.owner, ctx.repo_slug);
 
         let response: PaginatedResponse<Environment> = client.get(&url).await?;
 
@@ -627,10 +628,7 @@ impl DeployCommand {
         let ctx = self.resolve_context(global)?;
         let client = self.get_client(&ctx)?;
 
-        let url = format!(
-            "/repositories/{}/{}/environments",
-            ctx.owner, ctx.repo_slug
-        );
+        let url = format!("/repositories/{}/{}/environments", ctx.owner, ctx.repo_slug);
 
         let body = serde_json::json!({
             "name": args.name,
@@ -762,16 +760,34 @@ impl TableOutput for DeploymentDetail {
         println!("{}", "-".repeat(60));
         println!("UUID:                 {}", style(&self.uuid).cyan());
         println!("Environment:          {}", self.environment);
-        println!("Type:                 {}", self.environment_type.as_deref().unwrap_or("-"));
-        println!("State:                {}", match self.state.as_str() {
-            "COMPLETED" | "completed" => style(&self.state).green().to_string(),
-            "FAILED" | "failed" => style(&self.state).red().to_string(),
-            _ => self.state.clone(),
-        });
-        println!("Release:              {}", self.release.as_deref().unwrap_or("-"));
-        println!("Commit:               {}", self.commit.as_deref().unwrap_or("-"));
-        println!("Started:              {}", self.started_on.as_deref().unwrap_or("-"));
-        println!("Completed:            {}", self.completed_on.as_deref().unwrap_or("-"));
+        println!(
+            "Type:                 {}",
+            self.environment_type.as_deref().unwrap_or("-")
+        );
+        println!(
+            "State:                {}",
+            match self.state.as_str() {
+                "COMPLETED" | "completed" => style(&self.state).green().to_string(),
+                "FAILED" | "failed" => style(&self.state).red().to_string(),
+                _ => self.state.clone(),
+            }
+        );
+        println!(
+            "Release:              {}",
+            self.release.as_deref().unwrap_or("-")
+        );
+        println!(
+            "Commit:               {}",
+            self.commit.as_deref().unwrap_or("-")
+        );
+        println!(
+            "Started:              {}",
+            self.started_on.as_deref().unwrap_or("-")
+        );
+        println!(
+            "Completed:            {}",
+            self.completed_on.as_deref().unwrap_or("-")
+        );
         println!();
     }
 
@@ -791,8 +807,14 @@ impl TableOutput for EnvironmentListItem {
         println!("{}", "-".repeat(60));
         println!("UUID:                 {}", style(&self.uuid).cyan());
         println!("Name:                 {}", self.name);
-        println!("Type:                 {}", self.r#type.as_deref().unwrap_or("-"));
-        println!("Rank:                 {}", self.rank.map_or("-".to_string(), |r| r.to_string()));
+        println!(
+            "Type:                 {}",
+            self.r#type.as_deref().unwrap_or("-")
+        );
+        println!(
+            "Rank:                 {}",
+            self.rank.map_or("-".to_string(), |r| r.to_string())
+        );
         println!();
     }
 

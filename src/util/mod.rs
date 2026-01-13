@@ -444,9 +444,7 @@ pub fn page_output(content: &str) -> Result<()> {
         use std::io::Write;
         use std::process::{Command, Stdio};
 
-        let mut child = Command::new(&pager)
-            .stdin(Stdio::piped())
-            .spawn()?;
+        let mut child = Command::new(&pager).stdin(Stdio::piped()).spawn()?;
 
         if let Some(stdin) = child.stdin.as_mut() {
             stdin.write_all(content.as_bytes())?;
@@ -507,13 +505,13 @@ pub fn parse_size(s: &str) -> Result<u64> {
     let s = s.trim().to_uppercase();
 
     let (num, unit) = if s.ends_with("GB") {
-        (&s[..s.len()-2], 1024 * 1024 * 1024)
+        (&s[..s.len() - 2], 1024 * 1024 * 1024)
     } else if s.ends_with("MB") {
-        (&s[..s.len()-2], 1024 * 1024)
+        (&s[..s.len() - 2], 1024 * 1024)
     } else if s.ends_with("KB") {
-        (&s[..s.len()-2], 1024)
+        (&s[..s.len() - 2], 1024)
     } else if s.ends_with("B") {
-        (&s[..s.len()-1], 1)
+        (&s[..s.len() - 1], 1)
     } else {
         (s.as_str(), 1)
     };

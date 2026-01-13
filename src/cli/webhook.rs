@@ -32,8 +32,8 @@ use clap::{Args, Subcommand};
 use console::style;
 use serde::{Deserialize, Serialize};
 
-use crate::api::BitbucketClient;
 use crate::api::common::PaginatedResponse;
+use crate::api::BitbucketClient;
 use crate::auth::{AuthCredential, KeyringStore};
 use crate::config::Config;
 use crate::context::{ContextResolver, HostType, RepoContext};
@@ -243,18 +243,24 @@ impl TableOutput for DeliveryListItem {
         } else {
             style("failed").red().to_string()
         };
-        let code = self.status_code.map(|c| c.to_string()).unwrap_or_else(|| "-".to_string());
+        let code = self
+            .status_code
+            .map(|c| c.to_string())
+            .unwrap_or_else(|| "-".to_string());
         println!(
             "{:<38} {:<25} {:<10} {}",
-            &self.uuid,
-            &self.event,
-            status,
-            code
+            &self.uuid, &self.event, status, code
         );
     }
 
     fn print_markdown(&self) {
-        println!("| {} | {} | {} | {} |", self.uuid, self.event, self.success, self.status_code.unwrap_or(0));
+        println!(
+            "| {} | {} | {} | {} |",
+            self.uuid,
+            self.event,
+            self.success,
+            self.status_code.unwrap_or(0)
+        );
     }
 }
 
@@ -284,7 +290,8 @@ impl WebhookCommand {
         };
 
         let keyring = KeyringStore::new();
-        let token = keyring.get(&ctx.host)?
+        let token = keyring
+            .get(&ctx.host)?
             .ok_or_else(|| anyhow::anyhow!("Not authenticated. Run 'bb auth login' first."))?;
 
         Ok(client.with_auth(AuthCredential::OAuth {
@@ -308,14 +315,8 @@ impl WebhookCommand {
         let client = self.get_client(&ctx)?;
 
         let url = match ctx.host_type {
-            HostType::Cloud => format!(
-                "/repositories/{}/{}/hooks",
-                ctx.owner, ctx.repo_slug
-            ),
-            HostType::Server => format!(
-                "/projects/{}/repos/{}/webhooks",
-                ctx.owner, ctx.repo_slug
-            ),
+            HostType::Cloud => format!("/repositories/{}/{}/hooks", ctx.owner, ctx.repo_slug),
+            HostType::Server => format!("/projects/{}/repos/{}/webhooks", ctx.owner, ctx.repo_slug),
         };
 
         let response: PaginatedResponse<Webhook> = client.get(&url).await?;
@@ -407,14 +408,8 @@ impl WebhookCommand {
         }
 
         let url = match ctx.host_type {
-            HostType::Cloud => format!(
-                "/repositories/{}/{}/hooks",
-                ctx.owner, ctx.repo_slug
-            ),
-            HostType::Server => format!(
-                "/projects/{}/repos/{}/webhooks",
-                ctx.owner, ctx.repo_slug
-            ),
+            HostType::Cloud => format!("/repositories/{}/{}/hooks", ctx.owner, ctx.repo_slug),
+            HostType::Server => format!("/projects/{}/repos/{}/webhooks", ctx.owner, ctx.repo_slug),
         };
 
         let body = serde_json::json!({
@@ -670,17 +665,18 @@ impl WebhookListItem {
         };
 
         let events_str = if self.events.len() > 2 {
-            format!("{}, +{}", self.events[..2].join(", "), self.events.len() - 2)
+            format!(
+                "{}, +{}",
+                self.events[..2].join(", "),
+                self.events.len() - 2
+            )
         } else {
             self.events.join(", ")
         };
 
         println!(
             "{:<38} {:<8} {:<30} {}",
-            self.uuid,
-            active_str,
-            url_truncated,
-            events_str
+            self.uuid, active_str, url_truncated, events_str
         );
     }
 }
@@ -693,7 +689,8 @@ impl DeliveryListItem {
             style("no").red().to_string()
         };
 
-        let status_str = self.status_code
+        let status_str = self
+            .status_code
             .map(|s| s.to_string())
             .unwrap_or_else(|| "-".to_string());
 
@@ -717,11 +714,24 @@ impl TableOutput for WebhookDetail {
         println!("{}", "-".repeat(60));
         println!("UUID:                 {}", style(&self.uuid).cyan());
         println!("URL:                  {}", self.url);
-        println!("Description:          {}", self.description.as_deref().unwrap_or("-"));
-        println!("Active:               {}", if self.active { style("yes").green() } else { style("no").dim() });
+        println!(
+            "Description:          {}",
+            self.description.as_deref().unwrap_or("-")
+        );
+        println!(
+            "Active:               {}",
+            if self.active {
+                style("yes").green()
+            } else {
+                style("no").dim()
+            }
+        );
         println!("Events:               {}", self.events.join(", "));
         println!("Skip cert verify:     {}", self.skip_cert_verification);
-        println!("Created:              {}", self.created_at.as_deref().unwrap_or("-"));
+        println!(
+            "Created:              {}",
+            self.created_at.as_deref().unwrap_or("-")
+        );
         println!();
     }
 

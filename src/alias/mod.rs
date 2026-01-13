@@ -360,7 +360,10 @@ impl AliasManager {
             AliasConfig::default()
         };
 
-        Ok(Self { config, config_path })
+        Ok(Self {
+            config,
+            config_path,
+        })
     }
 
     /// Returns a reference to all defined aliases.
@@ -831,7 +834,12 @@ fn validate_alias_name(name: &str) -> Result<()> {
 
     // Reserved commands that cannot be aliased
     const RESERVED: &[&str] = &[
-        "help", "version", "alias", "extension", "config", "completion",
+        "help",
+        "version",
+        "alias",
+        "extension",
+        "config",
+        "completion",
     ];
 
     if RESERVED.contains(&name) {

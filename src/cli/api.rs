@@ -123,9 +123,19 @@ impl ApiCommand {
             .build()?;
 
         if self.paginate {
-            self.execute_paginated(&client, &url, &method, &headers, &token, body.clone(), global).await
+            self.execute_paginated(
+                &client,
+                &url,
+                &method,
+                &headers,
+                &token,
+                body.clone(),
+                global,
+            )
+            .await
         } else {
-            self.execute_single(&client, &url, &method, &headers, &token, body, global).await
+            self.execute_single(&client, &url, &method, &headers, &token, body, global)
+                .await
         }
     }
 
@@ -161,7 +171,10 @@ impl ApiCommand {
                 Ok((ctx.host, base_url))
             } else {
                 // Default to Cloud
-                Ok(("bitbucket.org".to_string(), "https://api.bitbucket.org".to_string()))
+                Ok((
+                    "bitbucket.org".to_string(),
+                    "https://api.bitbucket.org".to_string(),
+                ))
             }
         }
     }

@@ -45,15 +45,15 @@
 //! }
 //! ```
 
-mod oauth;
-mod token;
 mod keyring;
+mod oauth;
 mod profile;
+mod token;
 
-pub use oauth::*;
-pub use token::*;
 pub use keyring::*;
+pub use oauth::*;
 pub use profile::*;
+pub use token::*;
 
 use reqwest::RequestBuilder;
 
@@ -175,18 +175,12 @@ impl AuthCredential {
     /// - Call [`is_expired`](Self::is_expired) before making requests to ensure token validity.
     pub fn apply_to_request(&self, request: RequestBuilder) -> RequestBuilder {
         match self {
-            Self::OAuth { access_token, .. } => {
-                request.bearer_auth(access_token)
-            }
+            Self::OAuth { access_token, .. } => request.bearer_auth(access_token),
             Self::AppPassword { username, password } => {
                 request.basic_auth(username, Some(password))
             }
-            Self::PersonalAccessToken { token } => {
-                request.bearer_auth(token)
-            }
-            Self::Basic { username, password } => {
-                request.basic_auth(username, Some(password))
-            }
+            Self::PersonalAccessToken { token } => request.bearer_auth(token),
+            Self::Basic { username, password } => request.basic_auth(username, Some(password)),
         }
     }
 
@@ -228,9 +222,10 @@ impl AuthCredential {
     /// - Server-side token revocation is not detected by this method.
     pub fn is_expired(&self) -> bool {
         match self {
-            Self::OAuth { expires_at: Some(exp), .. } => {
-                *exp < chrono::Utc::now()
-            }
+            Self::OAuth {
+                expires_at: Some(exp),
+                ..
+            } => *exp < chrono::Utc::now(),
             _ => false,
         }
     }
@@ -270,6 +265,12 @@ impl AuthCredential {
     /// - Always check this before attempting to refresh a credential.
     /// - PAT, AppPassword, and Basic credentials cannot be refreshed.
     pub fn can_refresh(&self) -> bool {
-        matches!(self, Self::OAuth { refresh_token: Some(_), .. })
+        matches!(
+            self,
+            Self::OAuth {
+                refresh_token: Some(_),
+                ..
+            }
+        )
     }
 }

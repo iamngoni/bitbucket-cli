@@ -8,43 +8,43 @@
 
 //! CLI command definitions using clap derive macros
 
+mod alias;
+mod api;
+mod artifact;
 mod auth;
-mod repo;
-mod pr;
+mod browse;
+mod completion;
+mod config;
+mod deploy;
+mod extension;
 mod issue;
 mod pipeline;
-mod workspace;
+mod pr;
 mod project;
-mod browse;
-mod api;
-mod config;
-mod alias;
-mod extension;
-mod webhook;
-mod deploy;
-mod artifact;
+mod repo;
 mod secret;
 mod ssh_key;
-mod completion;
+mod webhook;
+mod workspace;
 
+pub use alias::AliasCommand;
+pub use api::ApiCommand;
+pub use artifact::ArtifactCommand;
 pub use auth::AuthCommand;
-pub use repo::RepoCommand;
-pub use pr::PrCommand;
+pub use browse::BrowseCommand;
+pub use completion::CompletionCommand;
+pub use config::ConfigCommand;
+pub use deploy::DeployCommand;
+pub use extension::ExtensionCommand;
 pub use issue::IssueCommand;
 pub use pipeline::PipelineCommand;
-pub use workspace::WorkspaceCommand;
+pub use pr::PrCommand;
 pub use project::ProjectCommand;
-pub use browse::BrowseCommand;
-pub use api::ApiCommand;
-pub use config::ConfigCommand;
-pub use alias::AliasCommand;
-pub use extension::ExtensionCommand;
-pub use webhook::WebhookCommand;
-pub use deploy::DeployCommand;
-pub use artifact::ArtifactCommand;
+pub use repo::RepoCommand;
 pub use secret::SecretCommand;
 pub use ssh_key::SshKeyCommand;
-pub use completion::CompletionCommand;
+pub use webhook::WebhookCommand;
+pub use workspace::WorkspaceCommand;
 
 use clap::{Parser, Subcommand};
 

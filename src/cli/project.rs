@@ -20,10 +20,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::client::BitbucketClient;
 use crate::api::common::{PaginatedResponse, ServerPaginatedResponse};
-use crate::api::server::projects::{Project as ServerProject, CreateProjectRequest, UpdateProjectRequest};
+use crate::api::server::projects::{
+    CreateProjectRequest, Project as ServerProject, UpdateProjectRequest,
+};
 use crate::auth::{AuthCredential, KeyringStore};
 use crate::config::Config;
-use crate::context::{ContextResolver, RepoContext, HostType};
+use crate::context::{ContextResolver, HostType, RepoContext};
 use crate::interactive::prompt_confirm_with_default;
 use crate::output::{OutputFormat, OutputWriter, TableOutput};
 use crate::util::open_browser;
@@ -515,13 +517,14 @@ impl ProjectCommand {
         let keyring = KeyringStore::new();
         let host = "bitbucket.org";
 
-        let token = keyring.get(host)?
-            .ok_or_else(|| anyhow::anyhow!(
+        let token = keyring.get(host)?.ok_or_else(|| {
+            anyhow::anyhow!(
                 "Not authenticated with Bitbucket Cloud. Run 'bb auth login --cloud' first."
-            ))?;
+            )
+        })?;
 
-        let client = BitbucketClient::cloud()?
-            .with_auth(AuthCredential::PersonalAccessToken { token });
+        let client =
+            BitbucketClient::cloud()?.with_auth(AuthCredential::PersonalAccessToken { token });
 
         Ok(client)
     }
@@ -529,14 +532,16 @@ impl ProjectCommand {
     fn get_server_client(&self, host: &str) -> Result<BitbucketClient> {
         let keyring = KeyringStore::new();
 
-        let token = keyring.get(host)?
-            .ok_or_else(|| anyhow::anyhow!(
+        let token = keyring.get(host)?.ok_or_else(|| {
+            anyhow::anyhow!(
                 "Not authenticated with {}. Run 'bb auth login --server --host {}' first.",
-                host, host
-            ))?;
+                host,
+                host
+            )
+        })?;
 
-        let client = BitbucketClient::server(host)?
-            .with_auth(AuthCredential::PersonalAccessToken { token });
+        let client =
+            BitbucketClient::server(host)?.with_auth(AuthCredential::PersonalAccessToken { token });
 
         Ok(client)
     }
@@ -562,10 +567,14 @@ impl ProjectCommand {
         if let Some(ctx) = &context {
             if ctx.host_type == HostType::Cloud {
                 // Cloud context - owner is the workspace
-                return self.list_cloud_projects(&ctx.owner, args.limit, global).await;
+                return self
+                    .list_cloud_projects(&ctx.owner, args.limit, global)
+                    .await;
             } else {
                 // Server/DC context
-                return self.list_server_projects(&ctx.host, args.limit, global).await;
+                return self
+                    .list_server_projects(&ctx.host, args.limit, global)
+                    .await;
             }
         }
 
@@ -578,50 +587,66 @@ impl ProjectCommand {
         bail!("Not authenticated. Run 'bb auth login' first.");
     }
 
-    async fn list_cloud_projects(&self, workspace: &str, limit: u32, global: &GlobalOptions) -> Result<()> {
+    async fn list_cloud_projects(
+        &self,
+        workspace: &str,
+        limit: u32,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         let client = self.get_cloud_client()?;
 
-        let url = format!(
-            "/workspaces/{}/projects?pagelen={}",
-            workspace, limit
-        );
+        let url = format!("/workspaces/{}/projects?pagelen={}", workspace, limit);
 
         let response: PaginatedResponse<CloudProject> = client.get(&url).await?;
 
-        let items: Vec<ProjectListItem> = response.values.into_iter().map(|p| {
-            ProjectListItem {
+        let items: Vec<ProjectListItem> = response
+            .values
+            .into_iter()
+            .map(|p| ProjectListItem {
                 key: p.key,
                 name: p.name,
                 description: p.description,
                 is_private: p.is_private,
                 project_type: "cloud".to_string(),
-            }
-        }).collect();
+            })
+            .collect();
 
         self.display_project_list(&items, Some(workspace), global)
     }
 
-    async fn list_server_projects(&self, host: &str, limit: u32, global: &GlobalOptions) -> Result<()> {
+    async fn list_server_projects(
+        &self,
+        host: &str,
+        limit: u32,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         let client = self.get_server_client(host)?;
 
         let url = format!("/projects?limit={}", limit);
 
         let response: ServerPaginatedResponse<ServerProject> = client.get(&url).await?;
 
-        let items: Vec<ProjectListItem> = response.values.into_iter().map(|p| {
-            ProjectListItem {
+        let items: Vec<ProjectListItem> = response
+            .values
+            .into_iter()
+            .map(|p| ProjectListItem {
                 key: p.key,
                 name: p.name,
                 description: p.description,
                 is_private: !p.is_public,
                 project_type: "server".to_string(),
-            }
-        }).collect();
+            })
+            .collect();
 
         self.display_project_list(&items, None, global)
     }
 
-    fn display_project_list(&self, items: &[ProjectListItem], workspace: Option<&str>, global: &GlobalOptions) -> Result<()> {
+    fn display_project_list(
+        &self,
+        items: &[ProjectListItem],
+        workspace: Option<&str>,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         if items.is_empty() {
             if let Some(ws) = workspace {
                 println!("No projects found in workspace '{}'.", ws);
@@ -667,14 +692,21 @@ impl ProjectCommand {
 
         // For Cloud, we need a project key from args or global options
         // For Server, the context.owner IS the project key
-        let project_key = args.project.as_ref()
+        let project_key = args
+            .project
+            .as_ref()
             .or(global.project.as_ref())
-            .or_else(|| context.as_ref()
-                .filter(|c| c.host_type == HostType::Server)
-                .map(|c| &c.owner))
-            .ok_or_else(|| anyhow::anyhow!(
-                "Project key required. Specify with argument or use --project flag."
-            ))?;
+            .or_else(|| {
+                context
+                    .as_ref()
+                    .filter(|c| c.host_type == HostType::Server)
+                    .map(|c| &c.owner)
+            })
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Project key required. Specify with argument or use --project flag."
+                )
+            })?;
 
         // Determine if Cloud or Server
         let is_cloud = if let Some(ctx) = &context {
@@ -684,28 +716,37 @@ impl ProjectCommand {
         };
 
         if is_cloud {
-            let workspace = global.workspace.as_ref()
-                .or_else(|| context.as_ref()
-                    .filter(|c| c.host_type == HostType::Cloud)
-                    .map(|c| &c.owner))
-                .ok_or_else(|| anyhow::anyhow!(
-                    "Workspace required for Cloud projects. Use --workspace flag."
-                ))?;
+            let workspace = global
+                .workspace
+                .as_ref()
+                .or_else(|| {
+                    context
+                        .as_ref()
+                        .filter(|c| c.host_type == HostType::Cloud)
+                        .map(|c| &c.owner)
+                })
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Workspace required for Cloud projects. Use --workspace flag.")
+                })?;
 
             if args.web {
-                let url = format!("https://bitbucket.org/{}/workspace/projects/{}", workspace, project_key);
+                let url = format!(
+                    "https://bitbucket.org/{}/workspace/projects/{}",
+                    workspace, project_key
+                );
                 println!("Opening {} in browser...", url);
                 open_browser(&url)?;
                 return Ok(());
             }
 
-            self.view_cloud_project(workspace, project_key, global).await
+            self.view_cloud_project(workspace, project_key, global)
+                .await
         } else {
-            let host = context.as_ref()
-                .map(|c| c.host.as_str())
-                .ok_or_else(|| anyhow::anyhow!(
+            let host = context.as_ref().map(|c| c.host.as_str()).ok_or_else(|| {
+                anyhow::anyhow!(
                     "Cannot determine Bitbucket Server host. Run from a git repository."
-                ))?;
+                )
+            })?;
 
             if args.web {
                 let url = format!("https://{}/projects/{}", host, project_key);
@@ -718,13 +759,19 @@ impl ProjectCommand {
         }
     }
 
-    async fn view_cloud_project(&self, workspace: &str, project_key: &str, global: &GlobalOptions) -> Result<()> {
+    async fn view_cloud_project(
+        &self,
+        workspace: &str,
+        project_key: &str,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         let client = self.get_cloud_client()?;
         let url = format!("/workspaces/{}/projects/{}", workspace, project_key);
 
         let project: CloudProject = client.get(&url).await?;
 
-        let html_url = project.links
+        let html_url = project
+            .links
             .as_ref()
             .and_then(|l| l.html.as_ref())
             .map(|h| h.href.clone());
@@ -736,10 +783,12 @@ impl ProjectCommand {
             is_private: project.is_private,
             project_type: "cloud".to_string(),
             created_on: project.created_on,
-            url: html_url.or_else(|| Some(format!(
-                "https://bitbucket.org/{}/workspace/projects/{}",
-                workspace, project_key
-            ))),
+            url: html_url.or_else(|| {
+                Some(format!(
+                    "https://bitbucket.org/{}/workspace/projects/{}",
+                    workspace, project_key
+                ))
+            }),
         };
 
         let writer = OutputWriter::new(self.get_format(global));
@@ -748,7 +797,12 @@ impl ProjectCommand {
         Ok(())
     }
 
-    async fn view_server_project(&self, host: &str, project_key: &str, global: &GlobalOptions) -> Result<()> {
+    async fn view_server_project(
+        &self,
+        host: &str,
+        project_key: &str,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         let client = self.get_server_client(host)?;
         let url = format!("/projects/{}", project_key);
 
@@ -775,15 +829,18 @@ impl ProjectCommand {
     /// Create a project (Server/DC only)
     async fn create(&self, args: &CreateArgs, global: &GlobalOptions) -> Result<()> {
         // Get context to determine host
-        let context = self.try_resolve_context(global)
-            .ok_or_else(|| anyhow::anyhow!(
+        let context = self.try_resolve_context(global).ok_or_else(|| {
+            anyhow::anyhow!(
                 "Cannot determine Bitbucket Server host. Run from a git repository or specify host."
-            ))?;
+            )
+        })?;
 
         if context.host_type == HostType::Cloud {
-            bail!("Project creation via API is not fully supported for Bitbucket Cloud. \
+            bail!(
+                "Project creation via API is not fully supported for Bitbucket Cloud. \
                    Use the web interface at https://bitbucket.org/{}/workspace/projects/create",
-                   context.owner);
+                context.owner
+            );
         }
 
         let client = self.get_server_client(&context.host)?;
@@ -827,14 +884,15 @@ impl ProjectCommand {
 
     /// Edit a project
     async fn edit(&self, args: &EditArgs, global: &GlobalOptions) -> Result<()> {
-        let context = self.try_resolve_context(global)
-            .ok_or_else(|| anyhow::anyhow!(
-                "Cannot determine Bitbucket Server host. Run from a git repository."
-            ))?;
+        let context = self.try_resolve_context(global).ok_or_else(|| {
+            anyhow::anyhow!("Cannot determine Bitbucket Server host. Run from a git repository.")
+        })?;
 
         if context.host_type == HostType::Cloud {
-            bail!("Project editing via API is not fully supported for Bitbucket Cloud. \
-                   Use the web interface.");
+            bail!(
+                "Project editing via API is not fully supported for Bitbucket Cloud. \
+                   Use the web interface."
+            );
         }
 
         if args.name.is_none() && args.description.is_none() && args.public.is_none() {
@@ -859,30 +917,37 @@ impl ProjectCommand {
         let _existing: ServerProject = client.get(&url).await?;
 
         // Since we don't have a PUT method, inform the user
-        bail!("Project editing requires PUT method which is not yet implemented. \
+        bail!(
+            "Project editing requires PUT method which is not yet implemented. \
                Use the web interface at https://{}/projects/{}/settings",
-               context.host, args.project);
+            context.host,
+            args.project
+        );
     }
 
     /// Delete a project
     async fn delete(&self, args: &DeleteArgs, global: &GlobalOptions) -> Result<()> {
-        let context = self.try_resolve_context(global)
-            .ok_or_else(|| anyhow::anyhow!(
-                "Cannot determine Bitbucket Server host. Run from a git repository."
-            ))?;
+        let context = self.try_resolve_context(global).ok_or_else(|| {
+            anyhow::anyhow!("Cannot determine Bitbucket Server host. Run from a git repository.")
+        })?;
 
         if context.host_type == HostType::Cloud {
-            bail!("Project deletion via API is not fully supported for Bitbucket Cloud. \
-                   Use the web interface.");
+            bail!(
+                "Project deletion via API is not fully supported for Bitbucket Cloud. \
+                   Use the web interface."
+            );
         }
 
         // Confirm deletion
         if !args.confirm {
             println!("You are about to delete project '{}'.", args.project);
-            println!("This will NOT delete repositories in the project, but they will become orphaned.");
+            println!(
+                "This will NOT delete repositories in the project, but they will become orphaned."
+            );
             println!();
 
-            if !prompt_confirm_with_default("Are you sure you want to delete this project?", false)? {
+            if !prompt_confirm_with_default("Are you sure you want to delete this project?", false)?
+            {
                 println!("Cancelled.");
                 return Ok(());
             }
@@ -917,14 +982,21 @@ impl ProjectCommand {
 
         // For Cloud, we need a project key from args or global options
         // For Server, the context.owner IS the project key
-        let project_key = args.project.as_ref()
+        let project_key = args
+            .project
+            .as_ref()
             .or(global.project.as_ref())
-            .or_else(|| context.as_ref()
-                .filter(|c| c.host_type == HostType::Server)
-                .map(|c| &c.owner))
-            .ok_or_else(|| anyhow::anyhow!(
-                "Project key required. Specify with argument or use --project flag."
-            ))?;
+            .or_else(|| {
+                context
+                    .as_ref()
+                    .filter(|c| c.host_type == HostType::Server)
+                    .map(|c| &c.owner)
+            })
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Project key required. Specify with argument or use --project flag."
+                )
+            })?;
 
         let is_cloud = if let Some(ctx) = &context {
             ctx.host_type == HostType::Cloud
@@ -933,27 +1005,40 @@ impl ProjectCommand {
         };
 
         if is_cloud {
-            let workspace = global.workspace.as_ref()
-                .or_else(|| context.as_ref()
-                    .filter(|c| c.host_type == HostType::Cloud)
-                    .map(|c| &c.owner))
-                .ok_or_else(|| anyhow::anyhow!(
-                    "Workspace required for Cloud projects. Use --workspace flag."
-                ))?;
+            let workspace = global
+                .workspace
+                .as_ref()
+                .or_else(|| {
+                    context
+                        .as_ref()
+                        .filter(|c| c.host_type == HostType::Cloud)
+                        .map(|c| &c.owner)
+                })
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Workspace required for Cloud projects. Use --workspace flag.")
+                })?;
 
-            self.repos_cloud(workspace, project_key, args.limit, global).await
+            self.repos_cloud(workspace, project_key, args.limit, global)
+                .await
         } else {
-            let host = context.as_ref()
-                .map(|c| c.host.as_str())
-                .ok_or_else(|| anyhow::anyhow!(
+            let host = context.as_ref().map(|c| c.host.as_str()).ok_or_else(|| {
+                anyhow::anyhow!(
                     "Cannot determine Bitbucket Server host. Run from a git repository."
-                ))?;
+                )
+            })?;
 
-            self.repos_server(host, project_key, args.limit, global).await
+            self.repos_server(host, project_key, args.limit, global)
+                .await
         }
     }
 
-    async fn repos_cloud(&self, workspace: &str, project_key: &str, limit: u32, global: &GlobalOptions) -> Result<()> {
+    async fn repos_cloud(
+        &self,
+        workspace: &str,
+        project_key: &str,
+        limit: u32,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         let client = self.get_cloud_client()?;
 
         // Filter repositories by project
@@ -964,38 +1049,53 @@ impl ProjectCommand {
 
         let response: PaginatedResponse<CloudRepository> = client.get(&url).await?;
 
-        let items: Vec<RepoListItem> = response.values.into_iter().map(|r| {
-            RepoListItem {
+        let items: Vec<RepoListItem> = response
+            .values
+            .into_iter()
+            .map(|r| RepoListItem {
                 slug: r.slug,
                 name: r.name,
                 description: r.description,
                 is_private: r.is_private,
-            }
-        }).collect();
+            })
+            .collect();
 
         self.display_repos_list(&items, project_key, global)
     }
 
-    async fn repos_server(&self, host: &str, project_key: &str, limit: u32, global: &GlobalOptions) -> Result<()> {
+    async fn repos_server(
+        &self,
+        host: &str,
+        project_key: &str,
+        limit: u32,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         let client = self.get_server_client(host)?;
 
         let url = format!("/projects/{}/repos?limit={}", project_key, limit);
 
         let response: ServerPaginatedResponse<ServerRepository> = client.get(&url).await?;
 
-        let items: Vec<RepoListItem> = response.values.into_iter().map(|r| {
-            RepoListItem {
+        let items: Vec<RepoListItem> = response
+            .values
+            .into_iter()
+            .map(|r| RepoListItem {
                 slug: r.slug,
                 name: r.name,
                 description: r.description,
                 is_private: !r.is_public,
-            }
-        }).collect();
+            })
+            .collect();
 
         self.display_repos_list(&items, project_key, global)
     }
 
-    fn display_repos_list(&self, items: &[RepoListItem], project_key: &str, global: &GlobalOptions) -> Result<()> {
+    fn display_repos_list(
+        &self,
+        items: &[RepoListItem],
+        project_key: &str,
+        global: &GlobalOptions,
+    ) -> Result<()> {
         if items.is_empty() {
             println!("No repositories found in project '{}'.", project_key);
             return Ok(());
@@ -1029,14 +1129,15 @@ impl ProjectCommand {
 
     /// List project members (Server/DC only)
     async fn members_list(&self, args: &MemberListArgs, global: &GlobalOptions) -> Result<()> {
-        let context = self.try_resolve_context(global)
-            .ok_or_else(|| anyhow::anyhow!(
-                "Cannot determine Bitbucket Server host. Run from a git repository."
-            ))?;
+        let context = self.try_resolve_context(global).ok_or_else(|| {
+            anyhow::anyhow!("Cannot determine Bitbucket Server host. Run from a git repository.")
+        })?;
 
         if context.host_type == HostType::Cloud {
-            bail!("Project member listing is only available for Bitbucket Server/DC. \
-                   For Cloud, use 'bb workspace members' instead.");
+            bail!(
+                "Project member listing is only available for Bitbucket Server/DC. \
+                   For Cloud, use 'bb workspace members' instead."
+            );
         }
 
         let client = self.get_server_client(&context.host)?;
@@ -1048,13 +1149,15 @@ impl ProjectCommand {
 
         let response: ServerPaginatedResponse<ServerProjectPermission> = client.get(&url).await?;
 
-        let items: Vec<MemberItem> = response.values.into_iter().map(|p| {
-            MemberItem {
+        let items: Vec<MemberItem> = response
+            .values
+            .into_iter()
+            .map(|p| MemberItem {
                 username: p.user.name,
                 display_name: p.user.display_name,
                 permission: p.permission,
-            }
-        }).collect();
+            })
+            .collect();
 
         if items.is_empty() {
             println!("No members found for project '{}'.", args.project);
@@ -1088,14 +1191,15 @@ impl ProjectCommand {
 
     /// Add a member to project (Server/DC only)
     async fn members_add(&self, args: &AddMemberArgs, global: &GlobalOptions) -> Result<()> {
-        let context = self.try_resolve_context(global)
-            .ok_or_else(|| anyhow::anyhow!(
-                "Cannot determine Bitbucket Server host. Run from a git repository."
-            ))?;
+        let context = self.try_resolve_context(global).ok_or_else(|| {
+            anyhow::anyhow!("Cannot determine Bitbucket Server host. Run from a git repository.")
+        })?;
 
         if context.host_type == HostType::Cloud {
-            bail!("Adding project members is only available for Bitbucket Server/DC. \
-                   For Cloud, use the workspace settings in the web interface.");
+            bail!(
+                "Adding project members is only available for Bitbucket Server/DC. \
+                   For Cloud, use the workspace settings in the web interface."
+            );
         }
 
         let client = self.get_server_client(&context.host)?;
@@ -1141,14 +1245,15 @@ impl ProjectCommand {
 
     /// Remove a member from project (Server/DC only)
     async fn members_remove(&self, args: &RemoveMemberArgs, global: &GlobalOptions) -> Result<()> {
-        let context = self.try_resolve_context(global)
-            .ok_or_else(|| anyhow::anyhow!(
-                "Cannot determine Bitbucket Server host. Run from a git repository."
-            ))?;
+        let context = self.try_resolve_context(global).ok_or_else(|| {
+            anyhow::anyhow!("Cannot determine Bitbucket Server host. Run from a git repository.")
+        })?;
 
         if context.host_type == HostType::Cloud {
-            bail!("Removing project members is only available for Bitbucket Server/DC. \
-                   For Cloud, use the workspace settings in the web interface.");
+            bail!(
+                "Removing project members is only available for Bitbucket Server/DC. \
+                   For Cloud, use the workspace settings in the web interface."
+            );
         }
 
         let client = self.get_server_client(&context.host)?;
@@ -1183,17 +1288,20 @@ impl ProjectCommand {
 
     /// View project permissions (Server/DC only)
     async fn permissions(&self, args: &PermissionsArgs, global: &GlobalOptions) -> Result<()> {
-        let context = self.try_resolve_context(global)
-            .ok_or_else(|| anyhow::anyhow!(
-                "Cannot determine Bitbucket Server host. Run from a git repository."
-            ))?;
+        let context = self.try_resolve_context(global).ok_or_else(|| {
+            anyhow::anyhow!("Cannot determine Bitbucket Server host. Run from a git repository.")
+        })?;
 
         if context.host_type == HostType::Cloud {
-            bail!("Project permissions are only available for Bitbucket Server/DC. \
-                   For Cloud, use 'bb workspace view' and check the web interface.");
+            bail!(
+                "Project permissions are only available for Bitbucket Server/DC. \
+                   For Cloud, use 'bb workspace view' and check the web interface."
+            );
         }
 
-        let project_key = args.project.as_ref()
+        let project_key = args
+            .project
+            .as_ref()
             .or(global.project.as_ref())
             .unwrap_or(&context.owner);
 
@@ -1240,7 +1348,10 @@ impl ProjectCommand {
             }
 
             println!();
-            println!("  For group permissions, visit: https://{}/projects/{}/permissions", context.host, project_key);
+            println!(
+                "  For group permissions, visit: https://{}/projects/{}/permissions",
+                context.host, project_key
+            );
         }
 
         Ok(())

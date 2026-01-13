@@ -225,7 +225,9 @@ impl BitbucketClient {
         let host_type = if config.host == "bitbucket.org" || config.host == "api.bitbucket.org" {
             HostType::Cloud
         } else {
-            HostType::Server { version: config.api_version.clone() }
+            HostType::Server {
+                version: config.api_version.clone(),
+            }
         };
 
         Ok(Self {

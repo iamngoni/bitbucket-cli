@@ -44,13 +44,13 @@
 //! writer.write_error("Something went wrong");
 //! ```
 
-mod table;
 mod json;
 mod markdown;
+mod table;
 
-pub use table::*;
 pub use json::*;
 pub use markdown::*;
+pub use table::*;
 
 use serde::Serialize;
 

@@ -337,7 +337,14 @@ impl TableOutput for IssueDetail {
 
         if let Some(content) = &self.content {
             println!();
-            println!("{}", if color { style("Description").bold().to_string() } else { "Description".to_string() });
+            println!(
+                "{}",
+                if color {
+                    style("Description").bold().to_string()
+                } else {
+                    "Description".to_string()
+                }
+            );
             println!("{}", "-".repeat(60));
             println!("{}", content);
         }
@@ -467,8 +474,8 @@ impl IssueCommand {
             )
         })?;
 
-        let client = BitbucketClient::cloud()?
-            .with_auth(AuthCredential::PersonalAccessToken { token });
+        let client =
+            BitbucketClient::cloud()?.with_auth(AuthCredential::PersonalAccessToken { token });
 
         Ok(client)
     }
@@ -571,7 +578,11 @@ impl IssueCommand {
         );
 
         if args.web {
-            println!("{} Opening issue #{} in browser...", style("→").cyan(), args.id);
+            println!(
+                "{} Opening issue #{} in browser...",
+                style("→").cyan(),
+                args.id
+            );
             open_browser(&url)?;
             return Ok(());
         }
@@ -667,10 +678,7 @@ impl IssueCommand {
             assignee: None, // Would need to look up user UUID
         };
 
-        let url = format!(
-            "/repositories/{}/{}/issues",
-            ctx.owner, ctx.repo_slug
-        );
+        let url = format!("/repositories/{}/{}/issues", ctx.owner, ctx.repo_slug);
 
         let issue: Issue = client.post(&url, &request).await?;
 

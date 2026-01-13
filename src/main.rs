@@ -36,8 +36,7 @@ async fn main() -> Result<()> {
 
 /// Initialize logging based on environment
 fn init_logging() {
-    let filter = EnvFilter::try_from_env("BB_DEBUG")
-        .unwrap_or_else(|_| EnvFilter::new("warn"));
+    let filter = EnvFilter::try_from_env("BB_DEBUG").unwrap_or_else(|_| EnvFilter::new("warn"));
 
     tracing_subscriber::registry()
         .with(fmt::layer().with_target(false))

@@ -56,8 +56,8 @@
 //! ```
 
 use anyhow::Result;
-use regex::Regex;
 use once_cell::sync::Lazy;
+use regex::Regex;
 
 use super::{GitContext, HostType, RepoContext};
 use crate::cli::GlobalOptions;
@@ -76,9 +76,8 @@ use crate::config::{is_cloud_host, Config};
 /// - `git@bitbucket.org:workspace/repo.git`
 /// - `git@bitbucket.org:workspace/repo` (without .git suffix)
 /// - `git@github.com:owner/repo.git`
-static SSH_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^git@([^:]+):(.+)/(.+?)(?:\.git)?$").unwrap()
-});
+static SSH_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^git@([^:]+):(.+)/(.+?)(?:\.git)?$").unwrap());
 
 /// Regular expression pattern for parsing HTTPS remote URLs.
 ///
@@ -92,9 +91,8 @@ static SSH_PATTERN: Lazy<Regex> = Lazy::new(|| {
 /// # Examples of Matched URLs
 /// - `https://bitbucket.org/workspace/repo.git`
 /// - `http://bitbucket.org/workspace/repo` (also matches HTTP)
-static HTTPS_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^https?://([^/]+)/(.+)/(.+?)(?:\.git)?$").unwrap()
-});
+static HTTPS_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^https?://([^/]+)/(.+)/(.+?)(?:\.git)?$").unwrap());
 
 /// Regular expression pattern for Bitbucket Server SSH URLs.
 ///
@@ -112,9 +110,8 @@ static HTTPS_PATTERN: Lazy<Regex> = Lazy::new(|| {
 /// # Notes
 /// - The port number is optional and not captured
 /// - This pattern is specific to Bitbucket Server/Data Center
-static SERVER_SSH_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^ssh://git@([^:/]+)(?::\d+)?/(.+)/(.+?)(?:\.git)?$").unwrap()
-});
+static SERVER_SSH_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^ssh://git@([^:/]+)(?::\d+)?/(.+)/(.+?)(?:\.git)?$").unwrap());
 
 /// Regular expression pattern for Bitbucket Server SCM URLs.
 ///
@@ -132,9 +129,8 @@ static SERVER_SSH_PATTERN: Lazy<Regex> = Lazy::new(|| {
 /// # Notes
 /// - The `/scm/` path component is specific to Bitbucket Server
 /// - This is the most common HTTPS format for Server installations
-static SERVER_SCM_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^https?://([^/]+)/scm/(.+)/(.+?)(?:\.git)?$").unwrap()
-});
+static SERVER_SCM_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^https?://([^/]+)/scm/(.+)/(.+?)(?:\.git)?$").unwrap());
 
 /// Resolves repository context from various sources.
 ///
@@ -318,7 +314,10 @@ impl ContextResolver {
         let repo_slug = parts[1].to_string();
 
         // Determine host type from options or default to Cloud
-        let host = options.host.clone().unwrap_or_else(|| "bitbucket.org".to_string());
+        let host = options
+            .host
+            .clone()
+            .unwrap_or_else(|| "bitbucket.org".to_string());
         let host_type = if is_cloud_host(&host) {
             HostType::Cloud
         } else {
@@ -461,7 +460,9 @@ mod tests {
     #[test]
     fn test_parse_cloud_ssh() {
         let resolver = ContextResolver::new(Config::default());
-        let ctx = resolver.parse_remote_url("git@bitbucket.org:workspace/repo.git").unwrap();
+        let ctx = resolver
+            .parse_remote_url("git@bitbucket.org:workspace/repo.git")
+            .unwrap();
         assert_eq!(ctx.host, "bitbucket.org");
         assert_eq!(ctx.owner, "workspace");
         assert_eq!(ctx.repo_slug, "repo");
@@ -471,7 +472,9 @@ mod tests {
     #[test]
     fn test_parse_cloud_https() {
         let resolver = ContextResolver::new(Config::default());
-        let ctx = resolver.parse_remote_url("https://bitbucket.org/workspace/repo.git").unwrap();
+        let ctx = resolver
+            .parse_remote_url("https://bitbucket.org/workspace/repo.git")
+            .unwrap();
         assert_eq!(ctx.host, "bitbucket.org");
         assert_eq!(ctx.owner, "workspace");
         assert_eq!(ctx.repo_slug, "repo");
@@ -481,7 +484,9 @@ mod tests {
     #[test]
     fn test_parse_server_scm() {
         let resolver = ContextResolver::new(Config::default());
-        let ctx = resolver.parse_remote_url("https://bitbucket.company.com/scm/PROJ/repo.git").unwrap();
+        let ctx = resolver
+            .parse_remote_url("https://bitbucket.company.com/scm/PROJ/repo.git")
+            .unwrap();
         assert_eq!(ctx.host, "bitbucket.company.com");
         assert_eq!(ctx.owner, "PROJ");
         assert_eq!(ctx.repo_slug, "repo");

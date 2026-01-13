@@ -396,7 +396,13 @@ pub fn md_table(headers: &[&str], rows: &[Vec<&str>]) -> String {
 
     // Separator row
     result.push_str("| ");
-    result.push_str(&headers.iter().map(|_| "---").collect::<Vec<_>>().join(" | "));
+    result.push_str(
+        &headers
+            .iter()
+            .map(|_| "---")
+            .collect::<Vec<_>>()
+            .join(" | "),
+    );
     result.push_str(" |\n");
 
     // Data rows
@@ -427,10 +433,7 @@ mod tests {
 
     #[test]
     fn test_md_table() {
-        let result = md_table(
-            &["Name", "Value"],
-            &[vec!["foo", "1"], vec!["bar", "2"]],
-        );
+        let result = md_table(&["Name", "Value"], &[vec!["foo", "1"], vec!["bar", "2"]]);
         assert!(result.contains("| Name | Value |"));
         assert!(result.contains("| foo | 1 |"));
     }

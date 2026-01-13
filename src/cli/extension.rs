@@ -321,11 +321,7 @@ impl ExtensionCommand {
                         });
                         println!("{}", serde_json::to_string_pretty(&result)?);
                     } else {
-                        println!(
-                            "{} Upgraded '{}'",
-                            style("✓").green(),
-                            style(name).cyan()
-                        );
+                        println!("{} Upgraded '{}'", style("✓").green(), style(name).cyan());
                     }
                 }
                 Err(e) => {
@@ -498,25 +494,14 @@ impl ExtensionCommand {
             });
             println!("{}", serde_json::to_string_pretty(&result)?);
         } else {
-            println!(
-                "{} Opening extension browser...",
-                style("→").cyan()
-            );
+            println!("{} Opening extension browser...", style("→").cyan());
 
             // Try to open in browser
             if let Err(e) = webbrowser::open(url) {
-                println!(
-                    "{} Could not open browser: {}",
-                    style("!").yellow(),
-                    e
-                );
+                println!("{} Could not open browser: {}", style("!").yellow(), e);
                 println!("Browse extensions at: {}", url);
             } else {
-                println!(
-                    "{} Opened {} in browser",
-                    style("✓").green(),
-                    url
-                );
+                println!("{} Opened {} in browser", style("✓").green(), url);
             }
         }
 
@@ -527,7 +512,8 @@ impl ExtensionCommand {
     async fn exec(&self, args: &ExecArgs, global: &GlobalOptions) -> Result<()> {
         let manager = ExtensionManager::new()?;
 
-        let ext = manager.find(&args.extension)?
+        let ext = manager
+            .find(&args.extension)?
             .ok_or_else(|| anyhow::anyhow!("Extension not found: {}", args.extension))?;
 
         if global.json {
@@ -546,7 +532,11 @@ impl ExtensionCommand {
         let exit_code = ext.execute(&args.args)?;
 
         if exit_code != 0 {
-            bail!("Extension '{}' exited with code {}", args.extension, exit_code);
+            bail!(
+                "Extension '{}' exited with code {}",
+                args.extension,
+                exit_code
+            );
         }
 
         Ok(())

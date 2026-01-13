@@ -81,10 +81,7 @@ use dialoguer::{FuzzySelect, MultiSelect, Select};
 /// - Press Escape or Ctrl+C to cancel
 /// - For large lists, consider [`fuzzy_select`] for faster navigation
 pub fn select<T: ToString>(message: &str, items: &[T]) -> Result<usize> {
-    let selection = Select::new()
-        .with_prompt(message)
-        .items(items)
-        .interact()?;
+    let selection = Select::new().with_prompt(message).items(items).interact()?;
     Ok(selection)
 }
 
