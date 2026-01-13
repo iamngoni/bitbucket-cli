@@ -20,11 +20,76 @@
 //! - Custom User-Agent header
 
 use anyhow::Result;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde::de::DeserializeOwned;
 
 use crate::auth::AuthCredential;
 use crate::config::HostConfig;
+
+/// Parses a Bitbucket API error response and extracts a user-friendly message.
+///
+/// Bitbucket Cloud returns errors in the format:
+/// ```json
+/// {"type": "error", "error": {"message": "Human readable message"}}
+/// ```
+///
+/// Bitbucket Server returns errors in the format:
+/// ```json
+/// {"errors": [{"message": "Human readable message"}]}
+/// ```
+///
+/// This function attempts to extract the message from either format.
+/// If parsing fails, it returns the original error body.
+///
+/// # Parameters
+///
+/// * `status` - The HTTP status code
+/// * `body` - The raw error response body
+///
+/// # Returns
+///
+/// Returns an `anyhow::Error` with a clean, user-friendly message.
+pub fn format_api_error(status: StatusCode, body: &str) -> anyhow::Error {
+    // Try to parse as Bitbucket Cloud error format
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(body) {
+        // Cloud format: {"type": "error", "error": {"message": "..."}}
+        if let Some(message) = json
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+        {
+            return anyhow::anyhow!("{}", message);
+        }
+
+        // Server format: {"errors": [{"message": "..."}]}
+        if let Some(message) = json
+            .get("errors")
+            .and_then(|e| e.as_array())
+            .and_then(|arr| arr.first())
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+        {
+            return anyhow::anyhow!("{}", message);
+        }
+
+        // Alternative Cloud format: {"error": {"detail": "..."}}
+        if let Some(detail) = json
+            .get("error")
+            .and_then(|e| e.get("detail"))
+            .and_then(|m| m.as_str())
+        {
+            return anyhow::anyhow!("{}", detail);
+        }
+
+        // Simple message format: {"message": "..."}
+        if let Some(message) = json.get("message").and_then(|m| m.as_str()) {
+            return anyhow::anyhow!("{}", message);
+        }
+    }
+
+    // Fallback to raw body if parsing fails
+    anyhow::anyhow!("API error ({}): {}", status, body)
+}
 
 /// Represents the type of Bitbucket platform being accessed.
 ///
@@ -387,7 +452,7 @@ impl BitbucketClient {
 
         if !status.is_success() {
             let text = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, text);
+            return Err(format_api_error(status, &text));
         }
 
         Ok(response.json().await?)
@@ -457,7 +522,7 @@ impl BitbucketClient {
 
         if !status.is_success() {
             let text = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, text);
+            return Err(format_api_error(status, &text));
         }
 
         Ok(response.json().await?)
@@ -507,7 +572,7 @@ impl BitbucketClient {
 
         if !status.is_success() {
             let text = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, text);
+            return Err(format_api_error(status, &text));
         }
 
         Ok(())
@@ -557,7 +622,7 @@ impl BitbucketClient {
 
         if !status.is_success() {
             let text = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, text);
+            return Err(format_api_error(status, &text));
         }
 
         Ok(response.json().await?)

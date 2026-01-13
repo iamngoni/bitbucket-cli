@@ -28,6 +28,7 @@ use std::process::Command;
 use super::GlobalOptions;
 use crate::api::cloud::repositories as cloud_repos;
 use crate::api::common::{PaginatedResponse, ServerPaginatedResponse};
+use crate::api::format_api_error;
 use crate::api::server::repositories as server_repos;
 use crate::auth::KeyringStore;
 use crate::config::{is_cloud_host, Config};
@@ -480,7 +481,7 @@ impl RepoCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let repos: PaginatedResponse<cloud_repos::Repository> = response.json().await?;
@@ -533,7 +534,7 @@ impl RepoCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let repos: ServerPaginatedResponse<server_repos::Repository> = response.json().await?;
@@ -624,7 +625,7 @@ impl RepoCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let repo: cloud_repos::Repository = response.json().await?;
@@ -658,7 +659,7 @@ impl RepoCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let repo: server_repos::Repository = response.json().await?;

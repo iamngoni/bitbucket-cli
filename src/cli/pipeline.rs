@@ -27,6 +27,7 @@ use crate::api::cloud::pipelines::{
     TriggerTarget,
 };
 use crate::api::common::PaginatedResponse;
+use crate::api::format_api_error;
 use crate::auth::KeyringStore;
 use crate::config::Config;
 use crate::context::{ContextResolver, HostType, RepoContext};
@@ -625,7 +626,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         let paginated: PaginatedResponse<Pipeline> = response
@@ -744,7 +745,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         let pipeline: Pipeline = response
@@ -923,7 +924,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         let pipeline: Pipeline = response
@@ -982,7 +983,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         if global.json {
@@ -1018,7 +1019,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         let pipeline: Pipeline = response
@@ -1067,7 +1068,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         let new_pipeline: Pipeline = response
@@ -1120,7 +1121,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         let paginated: PaginatedResponse<PipelineStep> = response
@@ -1241,7 +1242,7 @@ impl PipelineCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let body = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, body);
+                return Err(format_api_error(status, &body));
             }
 
             let pipeline: Pipeline = response
@@ -1367,7 +1368,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         if global.json {
@@ -1407,7 +1408,7 @@ impl PipelineCommand {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("API error ({}): {}", status, body);
+            return Err(format_api_error(status, &body));
         }
 
         if global.json {
@@ -1548,7 +1549,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 let paginated: PaginatedResponse<PipelineCache> = response
@@ -1588,7 +1589,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 if global.json {
@@ -1615,7 +1616,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 let paginated: PaginatedResponse<PipelineCache> = response
@@ -1680,7 +1681,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 let paginated: PaginatedResponse<PipelineSchedule> = response
@@ -1741,7 +1742,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 let schedule: PipelineSchedule = response
@@ -1777,7 +1778,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 if global.json {
@@ -1804,7 +1805,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 if global.json {
@@ -1831,7 +1832,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 if global.json {
@@ -1869,7 +1870,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 let paginated: PaginatedResponse<PipelineRunner> = response
@@ -1929,7 +1930,7 @@ impl PipelineCommand {
                 if !response.status().is_success() {
                     let status = response.status();
                     let body = response.text().await.unwrap_or_default();
-                    anyhow::bail!("API error ({}): {}", status, body);
+                    return Err(format_api_error(status, &body));
                 }
 
                 if global.json {

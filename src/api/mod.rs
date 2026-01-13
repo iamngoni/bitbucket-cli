@@ -97,6 +97,11 @@ pub mod common;
 /// Bitbucket Cloud or Server/Data Center.
 pub use client::BitbucketClient;
 
+/// Re-export of the API error formatting function.
+///
+/// Use this to convert raw API error responses into user-friendly messages.
+pub use client::format_api_error;
+
 /// Re-export of common API types.
 ///
 /// - [`ApiError`]: Error type for API operations

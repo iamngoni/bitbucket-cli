@@ -16,6 +16,7 @@ use std::process::Command;
 use super::GlobalOptions;
 use crate::api::cloud::pullrequests as cloud_prs;
 use crate::api::common::{PaginatedResponse, ServerPaginatedResponse};
+use crate::api::format_api_error;
 use crate::api::server::pullrequests as server_prs;
 use crate::auth::KeyringStore;
 use crate::config::Config;
@@ -629,7 +630,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let prs: PaginatedResponse<cloud_prs::PullRequest> = response.json().await?;
@@ -692,7 +693,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let prs: ServerPaginatedResponse<server_prs::PullRequest> = response.json().await?;
@@ -799,7 +800,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let pr: cloud_prs::PullRequest = response.json().await?;
@@ -845,7 +846,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let pr: server_prs::PullRequest = response.json().await?;
@@ -1120,7 +1121,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let pr: cloud_prs::PullRequest = response.json().await?;
@@ -1136,7 +1137,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let pr: server_prs::PullRequest = response.json().await?;
@@ -1217,7 +1218,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let diff = response.text().await?;
@@ -1238,7 +1239,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             let diff = response.text().await?;
@@ -1987,7 +1988,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             #[derive(Deserialize)]
@@ -2283,7 +2284,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             #[derive(Deserialize)]
@@ -2333,7 +2334,7 @@ impl PrCommand {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("API error ({}): {}", status, text);
+                return Err(format_api_error(status, &text));
             }
 
             #[derive(Deserialize)]
