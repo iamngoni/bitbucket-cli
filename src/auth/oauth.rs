@@ -78,6 +78,10 @@ use url::Url;
 /// Users can override this with their own OAuth consumer.
 pub const DEFAULT_CLIENT_ID: &str = "Pyydmsf5kLpEqs24kw";
 
+/// The default OAuth client secret for the Bitbucket CLI.
+/// Required by Bitbucket for the authorization code flow.
+pub const DEFAULT_CLIENT_SECRET: &str = "c6DVtkkq7rkS5GqjBu4D9q3f2JQBtGA9";
+
 /// Bitbucket Cloud OAuth authorization endpoint.
 const AUTHORIZE_URL: &str = "https://bitbucket.org/site/oauth2/authorize";
 
@@ -105,7 +109,7 @@ const TOKEN_URL: &str = "https://bitbucket.org/site/oauth2/access_token";
 /// let config = OAuthConfig {
 ///     client_id: "your_app_client_id".to_string(),
 ///     client_secret: Some("your_client_secret".to_string()),
-///     redirect_uri: "http://localhost:8085/callback".to_string(),
+///     redirect_uri: "http://localhost:29418/callback".to_string(),
 ///     scopes: vec![
 ///         "repository".to_string(),
 ///         "repository:write".to_string(),
@@ -123,7 +127,7 @@ const TOKEN_URL: &str = "https://bitbucket.org/site/oauth2/access_token";
 /// # Notes
 ///
 /// - `client_secret` is optional for public clients (native/mobile apps).
-/// - The default redirect URI uses port 8085 on localhost.
+/// - The default redirect URI uses port 29418 on localhost.
 /// - Default scopes provide comprehensive access for CLI operations.
 pub struct OAuthConfig {
     /// The OAuth 2.0 client identifier for this application.
@@ -158,7 +162,7 @@ impl Default for OAuthConfig {
     ///
     /// - `client_id`: Empty string (must be set before use)
     /// - `client_secret`: None
-    /// - `redirect_uri`: `http://localhost:8085/callback`
+    /// - `redirect_uri`: `http://localhost:29418/callback`
     /// - `scopes`: Comprehensive scopes for CLI operations
     ///
     /// # Example
@@ -173,7 +177,7 @@ impl Default for OAuthConfig {
         Self {
             client_id: String::new(),
             client_secret: None,
-            redirect_uri: "http://localhost:8085/callback".to_string(),
+            redirect_uri: "http://localhost:29418/callback".to_string(),
             scopes: vec![
                 "repository".to_string(),
                 "repository:write".to_string(),
@@ -371,7 +375,7 @@ impl PkceChallenge {
 /// # Notes
 ///
 /// - The function will block until the user completes or cancels authorization.
-/// - Ensure the redirect URI port (default: 8085) is available.
+/// - Ensure the redirect URI port (default: 29418) is available.
 /// - The callback server runs on localhost and doesn't require internet access.
 pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
     // Generate PKCE challenge
@@ -379,7 +383,7 @@ pub async fn oauth_login(config: &OAuthConfig) -> Result<OAuthTokenResponse> {
 
     // Parse redirect URI to extract port
     let redirect_url = Url::parse(&config.redirect_uri).context("Invalid redirect URI")?;
-    let port = redirect_url.port().unwrap_or(8085);
+    let port = redirect_url.port().unwrap_or(29418);
 
     // Build authorization URL
     let mut auth_url = Url::parse(AUTHORIZE_URL)?;

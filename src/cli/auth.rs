@@ -17,7 +17,7 @@ use clap::{Args, Subcommand};
 use crate::auth::{
     get_cloud_username, oauth_login, read_token_from_stdin, refresh_oauth_token,
     validate_cloud_token, validate_token, KeyringStore, OAuthConfig, PersonalAccessToken,
-    DEFAULT_CLIENT_ID,
+    DEFAULT_CLIENT_ID, DEFAULT_CLIENT_SECRET,
 };
 use crate::config::{Config, HostConfig};
 use crate::interactive::{prompt_confirm_with_default, prompt_input, prompt_password};
@@ -214,7 +214,7 @@ async fn login_cloud(args: &LoginArgs) -> Result<()> {
 
         let config = OAuthConfig {
             client_id: DEFAULT_CLIENT_ID.to_string(),
-            client_secret: None,
+            client_secret: Some(DEFAULT_CLIENT_SECRET.to_string()),
             scopes,
             ..Default::default()
         };
