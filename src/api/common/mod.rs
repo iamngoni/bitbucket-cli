@@ -317,12 +317,19 @@ pub struct Link {
 /// - Field aliases ensure seamless deserialization from either API variant
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRef {
-    /// Unique identifier for the user.
+    /// Unique identifier for the user (Cloud: account_id format).
     ///
-    /// For Bitbucket Cloud, this is the `account_id` (UUID format).
-    /// For Bitbucket Server, this is the `uuid` field.
+    /// For Bitbucket Cloud, this is the `account_id`.
     /// May be `None` for anonymous or system-generated references.
-    #[serde(alias = "account_id")]
+    #[serde(default, rename = "account_id")]
+    pub account_id: Option<String>,
+
+    /// UUID identifier for the user.
+    ///
+    /// For Bitbucket Cloud, this is the `uuid` field (with curly braces).
+    /// For Bitbucket Server, this may also be present.
+    /// May be `None` for anonymous or system-generated references.
+    #[serde(default)]
     pub uuid: Option<String>,
 
     /// Display name of the user.
