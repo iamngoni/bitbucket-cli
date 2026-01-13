@@ -21,8 +21,8 @@ clap_complete = "4.5"
 # Async runtime
 tokio = { version = "1.40", features = ["full"] }
 
-# HTTP client
-reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"] }
+# HTTP client (use rustls instead of native-tls for cross-compilation)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream", "http2", "charset", "macos-system-configuration"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -36,8 +36,8 @@ anyhow = "1.0"
 # Secure credential storage
 keyring = "3.6"
 
-# Git operations
-git2 = "0.19"
+# Git operations (use vendored OpenSSL for cross-compilation)
+git2 = { version = "0.19", features = ["vendored-openssl"] }
 
 # Terminal UI
 dialoguer = { version = "0.11", features = ["fuzzy-select"] }
