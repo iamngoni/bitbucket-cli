@@ -61,12 +61,8 @@ pub enum AuthSubcommand {
 
 #[derive(Args, Debug)]
 pub struct LoginArgs {
-    /// Authenticate with Bitbucket Cloud
-    #[arg(long, conflicts_with = "server")]
-    pub cloud: bool,
-
-    /// Authenticate with Bitbucket Server/Data Center
-    #[arg(long, conflicts_with = "cloud")]
+    /// Authenticate with Bitbucket Server/Data Center (self-hosted)
+    #[arg(long, visible_alias = "self-hosted")]
     pub server: bool,
 
     /// The hostname of the Bitbucket instance (for Server/DC)
@@ -135,33 +131,16 @@ impl AuthCommand {
 /// Performs the login flow.
 async fn login(args: &LoginArgs) -> Result<()> {
     // Determine if we're logging into Cloud or Server/DC
-    let is_cloud = if args.server {
-        false
-    } else if args.cloud {
-        true
-    } else if args.host.is_some() {
-        // If a host is specified and it's not bitbucket.org, assume Server/DC
-        let host = args.host.as_ref().unwrap();
-        host == "bitbucket.org" || host == "api.bitbucket.org"
-    } else {
-        // Default to Cloud, but ask if interactive
-        if args.with_token {
-            // Non-interactive, assume Cloud
-            true
-        } else {
-            // Interactive - ask the user
-            println!("What would you like to authenticate with?");
-            println!("  1) Bitbucket Cloud (bitbucket.org)");
-            println!("  2) Bitbucket Server/Data Center (self-hosted)");
-            let choice = prompt_input("Enter choice [1/2]:")?;
-            choice.trim() != "2"
-        }
-    };
+    // Default to Cloud unless --server/--self-hosted is specified or a non-Cloud host is provided
+    let is_server = args.server
+        || args.host.as_ref().map_or(false, |h| {
+            h != "bitbucket.org" && h != "api.bitbucket.org"
+        });
 
-    if is_cloud {
-        login_cloud(args).await
-    } else {
+    if is_server {
         login_server(args).await
+    } else {
+        login_cloud(args).await
     }
 }
 
